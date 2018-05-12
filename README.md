@@ -1,4 +1,4 @@
-# Halite Tournaments    <img src="imgs/HTLogo.svg" alt="Logo" style="width: 100px;"/>
+# Halite Tournaments    <img src="imgs/HTLogo.svg" alt="Logo" style="width: 25px;"/>
 
 Halite Tournaments is a project created by @FrankWhoee and @Splinter0
 to allow fans of the @twosigma's AI challenge Halite-II to participate
