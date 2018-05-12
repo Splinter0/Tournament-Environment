@@ -1,6 +1,4 @@
-# Halite Tournaments        
-
-![logo](https://s14.postimg.org/fy1jl5imp/HTLogo.png)
+# Halite Tournaments    <img src="imgs/HTLogo.svg" alt="Logo" style="width: 100px;"/>
 
 Halite Tournaments is a project created by @FrankWhoee and @Splinter0
 to allow fans of the @twosigma's AI challenge Halite-II to participate
@@ -74,20 +72,11 @@ He has access to all project folders.
 ## TODO
 
 - Add more languages support
-- Add support with HT-Backup
-- Add precompiled engine to `!engine` command
 - Add suggestions from season-2:
   ```
   - Logs for make failures on submission
-  - A command to check who submitted
-  - Submissions available from DM
-  - Battle dimensions default
-  - Starter bot people can fight against
-  - A player should be able to battle against itself
   - Include damage, ships created in log for battles
-  - Sending log files for matches
   ```
-- Add more emojis on the messages :wink:
 
 ## Contribute!
 

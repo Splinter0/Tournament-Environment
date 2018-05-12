@@ -5,6 +5,7 @@ import json
 import funcs
 import settings
 import subprocess
+import importlib
 
 client = discord.Client()
 
@@ -18,9 +19,10 @@ commands = {"!help":"Show this message",
             "!battle":"Run a match between two players, \n\t!battle [p1] [p2] [height map] [width map] [bet]\n\tYou can write \"bet\" at the end of the command to automatically create a bet on the game with Vegas\n",
             "!donations":"Get infos about donations",
             "!specs":"Check tournament specs",
-            "!engine":"Know how to get the engine of the current tournament",
+            "!engine":"Know how to get the engine of the current tournament, !engine [win/mac/linux]",
             "!result":"Result [n of the battle], to show the results of battle with bet on",
-            "!results":"Show all the battles with bets that are still hidden"}
+            "!results":"Show all the battles with bets that are still hidden",
+            "!players":"Check who signed up for this season and if they submitted a bot"}
 
 adminCommands = {"!subs":"!subs True/False opens or closes submissions",
                  "!brk":"To add as a comment with the brackets image to update it",
@@ -44,12 +46,15 @@ async def on_ready(): #startup
     global haliteVegas
     try:
         haliteVegas = discord.utils.get(client.get_all_channels(), server__name=settings.serverName, name='halite-vegas')
-        print("\nInteraction with Vegas enabled")
+        print("Interaction with Vegas enabled")
     except:
-        print("\nInteraction with Vegas not avaible")
+        print("Interaction with Vegas not avaible")
 
 @client.event
 async def on_message(message):
+
+    server = discord.utils.get(client.servers, name=settings.serverName)
+
     try :
         if message.content.startswith("!submit"):
 
@@ -67,18 +72,31 @@ async def on_message(message):
                 - Sends logs and compiler outputs via DM to the player
             """
 
-            if not settings.submit : #if the submissions are closed
-                await client.delete_message(message)
-                await client.send_message(message.channel, "**Submissions are closed at the moment!** "+message.author.mention)
-            else:
-                if str(message.channel) != "season-"+settings.season and str(message.channel) != "battles": #if message is in the wrong channel
+            player = discord.utils.get(server.roles, name="Player")
+            isPlayer = False
+            for m in server.members:
+                if str(m) == str(message.author):
+                    roles = m.roles
+                    if player in roles:
+                        isPlayer = True
+
+            if not settings.submit and isPlayer: #if the submissions are closed
+                if not message.channel.is_private:
                     await client.delete_message(message)
+                await client.send_message(message.channel, "**Submissions are closed at the moment!** "+message.author.mention)
+            elif isPlayer:
+                if str(message.channel) != "season-"+settings.season and str(message.channel) != "battles" and not message.channel.is_private: #if message is in the wrong channel
+                    if not message.channel.is_private:
+                        print("esk1")
+                        await client.delete_message(message)
                     await client.send_message(message.channel, "**Cannot use this command in this channel!** "+message.author.mention)
                 else:
                     try:
                         await client.send_message(message.channel, "`Submitting, compiling and testing your bot...` "+message.author.mention)
                         response, compileLog = await funcs.uploadBot(message.attachments[0].get('url'), str(message.author), message.attachments[0].get('filename'))
-                        await client.delete_message(message)
+                        if not message.channel.is_private:
+                            print("esk2")
+                            await client.delete_message(message)
                         await client.send_message(message.channel, "`"+response+"` "+message.author.mention)
                         if compileLog != "": #if compiled and run successfully
                             await client.send_message(message.author, "**Here your compile and run log for yout bot submission!**")
@@ -86,6 +104,10 @@ async def on_message(message):
 
                     except IndexError : #no attachments present
                         await client.send_message(message.channel, "`No attachment present!` "+message.author.mention)
+
+            else:
+                await client.send_message(message.channel, "**You are not a Player! Sign up for the tournament first!** "+message.author.mention)
+
 
 
         elif message.content.startswith("!submissions"): #check submissions
@@ -100,7 +122,7 @@ async def on_message(message):
                 s, s2 = "opened", "close"
             else :
                 s, s2 = "closed", "open"
-            await client.send_message(message.channel, "**Current status of submissions : "+s+", the submissions will "+s2+" : "+settings.timeSub+"**")
+            await client.send_message(message.channel, "**Current status of submissions : "+s+", the submissions will "+s2+" : "+settings.timeSub+"**"+" "+settings.emojis["logo"])
 
         elif message.content.startswith("!help"): #help function
 
@@ -108,6 +130,8 @@ async def on_message(message):
             This command simply prints the name of all
             other commands with a brief explaination
             """
+
+            await client.send_message(message.channel, "**Running season : "+settings.season+"** "+settings.emojis["logo"])
 
             text = "```\n"
             for k,c in sorted(commands.items()):
@@ -127,10 +151,10 @@ async def on_message(message):
                     with open(settings.infos, "r") as f:
                         infos = f.read()
                         infos = infos.replace("\\n","\n")
-                        await client.send_message(message.channel, infos)
+                        await client.send_message(message.channel, infos+"\n"+settings.emojis["logo"])
 
                 except FileNotFoundError:
-                    await client.send_message(message.channel, "**Rules for current tournament are not ultimated!**")
+                    await client.send_message(message.channel, "**Rules for current tournament are not ultimated!** "+settings.emojis["paper"])
             else:
                 await client.send_message(message.channel, "**No tournament currently ongoing!**")
 
@@ -146,9 +170,13 @@ async def on_message(message):
 
             if settings.onTour: #if we are running in a tournament
                 m = str(message.content).split()
-                if len(m) == 1: #check all matches
-                    text = "**Here are the upcoming matches!**\n\n"
-                    for k,v in sorted(settings.matches.items()):
+                matches = settings.matches
+                if matches is None or len(matches) < 1 or matches == "empty":
+                    text = "**No matches scheduled at the moment!**"
+
+                elif len(m) == 1: #check all matches
+                    text = "**Here are the upcoming matches!** "+settings.emojis["logo"]+"\n\n"
+                    for k,v in sorted(matches.items()):
                         text += "**" + k + "** : \n"
                         for p in v:
                             text += "\t" + p + "\n"
@@ -163,14 +191,14 @@ async def on_message(message):
                         text = "**Wrong formatting! Check `!help` for more info**"
 
                     if player != "":
-                        for k,v in sorted(settings.matches.items()):
+                        for k,v in sorted(matches.items()):
                             for p in v:
                                 if player in p:
                                     t += "**" + k + "** : \n"
                                     t += "\t" + p + "\n"
 
                     if t != "":
-                        text = "**Here are all the matches of : "+m[1]+"**\n"+t
+                        text = "**Here are all the matches of : "+m[1]+"** "+settings.emojis["logo"]+"\n"+t
 
                     elif player != "" and t == "" :
                         text = "**No matches scheduled for : "+m[1]+" !**"
@@ -224,7 +252,7 @@ async def on_message(message):
                         width = "240"
                         height = "160"
 
-                    await client.send_message(message.channel, "*Running battle...* <:logo:416779058924355596>")
+                    await client.send_message(message.channel, "*Running battle...* "+settings.emojis["logo"])
                     status, result, log1, log2, replay = await funcs.battle(p1, p2, width, height, False)
                     global haliteVegas
                     if haliteVegas != None and bet:
@@ -236,7 +264,7 @@ async def on_message(message):
                         if haliteVegas != None and bet and status.startswith("**Battle ran successfully"):
                             global res
                             results.update({str(res):{"author":str(message.author), "result":result, "battle":p1+"VS"+p2}})
-                            result = "**Hiding results until bet isn't closed, check output and close with !result "+str(res)+"**"
+                            result = "**Hiding results until bet isn't closed, check output and close with !result "+str(res)+"** "+settings.emojis["dollar"]
                             res += 1
 
                         await client.send_message(message.channel, result)
@@ -255,7 +283,7 @@ async def on_message(message):
                             await client.send_file(message.mentions[1], log2)
                             os.remove(log2)
 
-                except IndexError : #formatting error
+                except (KeyError, IndexError): #formatting error
                     await client.send_message(message.channel, "**Bad formatting! Run !help for info about commands**")
 
             elif str(message.channel) != "battles": #wrong channel!
@@ -298,7 +326,6 @@ async def on_message(message):
                     if r.get("author") == str(message.author) :
                         if num == n:
                             text = "**Here are the results of the battle n."+str(n)+":** \n"+r.get("result")
-                            del results[num]
                             break
                         else:
                             text = "**No battle with bet for number "+str(n)+"**"
@@ -319,7 +346,23 @@ async def on_message(message):
             status. (submitted/not)
             """
 
-            pass
+            player = discord.utils.get(server.roles, name="Player")
+            members = client.get_all_members()
+            players = {}
+
+            for m in members:
+                if player in m.roles:
+                    p = settings.db.players.find_one({"username":str(m)})
+                    if p is None:
+                        players[str(m)] = False
+                    else:
+                        players[str(m)] = True
+
+            text = "**Here are all the players in this season :**\n"
+            for p, s in players.items():
+                text += "\n`"+p+"`, has submitted : *"+str(s)+"*"
+
+            await client.send_message(message.channel, text)
 
         elif message.content.startswith("!brackets"): #get current brackets
 
@@ -332,10 +375,10 @@ async def on_message(message):
                     await client.send_file(message.channel, settings.brackets)
 
                 except:
-                    await client.send_message(message.channel, "**Brackets are not up yet!**")
+                    await client.send_message(message.channel, "**Brackets are not up yet!** "+settings.emojis["paper"])
 
             else : #if no tournament is running
-                await client.send_message(message.channel, "**No tournament currently ongoing!**")
+                await client.send_message(message.channel, "**No tournament currently ongoing!** "+settings.emojis["explosion"])
 
         elif message.content.startswith("!languages"): #send all supported languages
 
@@ -350,7 +393,7 @@ async def on_message(message):
 
             m = message.content.split()
             if len(m) == 1:
-                t = "**Here are the languages supported for your bot:**\n\n"
+                t = "**Here are the languages supported for your bot:** "+settings.emojis["paper"]+"\n\n"
                 for l in sorted(funcs.languages.keys()):
                     t += l+", "
                 t += "\n\nIf your language is **not supported** compile it in a `MyBot` file, or dm Splinter if you have problems"
@@ -387,7 +430,7 @@ async def on_message(message):
             donate to this project
             """
 
-            text = "Donations are used to help support Halite Tournaments. We use your contributions to run our servers and give cash prizes. Donate here: https://www.paypal.me/HaliteTournaments. Donating will give you the **Contributor** role which has access to the Contributors voice channel. More privileges for Contributors will be coming!"
+            text = "Donations are used to help support Halite Tournaments. We use your contributions to run our servers and give cash prizes. Donate here: https://www.paypal.me/HaliteTournaments. Donating will give you the **Contributor** role which has access to the Contributors voice channel. More privileges for Contributors will be coming!\n"+settings.emojis["logo"]+settings.emojis["paper"]
             await client.send_message(message.channel, text)
 
         elif message.content.startswith("!specs"):
@@ -400,7 +443,7 @@ async def on_message(message):
 
             try :
                 with open(settings.specs, "r") as s:
-                    text = s.read()
+                    text = s.read()+"\n"+settings.emojis["logo"]+settings.emojis["planet"]
 
             except FileNotFoundError:
                 text = "**Specs for season-"+settings.season+" are still not out**"
@@ -417,10 +460,32 @@ async def on_message(message):
             """
             #TODO Add precompiled options
 
-            if settings.engineLink != "" and settings.onTour:
-                await client.send_message(message.channel, "**Here is the link containing the info for the engine : "+settings.engineLink+"**")
+            if len(message.content.split()) > 1:
+                engine = None
+                try:
+                    if message.content.split()[1] == "win":
+                        engine = settings.engine[0]
+                    elif message.content.split()[1] == "mac":
+                        engine = settings.engine[1]
+                    elif message.content.split()[1] == "linux":
+                        engine = settings.engine[2]
+
+                except:
+                    engine = None
+
+                try:
+                    await client.send_file(message.author, engine)
+                    await client.send_message(message.channel, "*Sending precompiled engine in DMs* "+message.author.mention+" "+settings.emojis["engine"])
+                    await client.send_message(message.author, "**Here is your precompiled engine for "+message.content.split()[1]+"**")
+
+                except :
+                    await client.send_message(message.channel, "**Precompile engine for "+message.content.split()[1]+" is not avaible yet!** "+message.author.mention+" "+settings.emojis["engine"])
+
             else:
-                await client.send_message(message.channel, "**Link still not avaible!**")
+                if settings.engineLink != "" and settings.onTour:
+                    await client.send_message(message.channel, "**Here is the link containing the info for the engine : "+settings.engineLink+"** "+settings.emojis["engine"])
+                else:
+                    await client.send_message(message.channel, "**Link still not avaible!** "+settings.emojis["paper"])
 
         #admin commands
         elif str(message.author) in settings.admins:
@@ -599,6 +664,37 @@ async def on_message(message):
                 else:
                     await client.send_message(message.channel, "**Invalid command**")
 
+            elif message.content.startswith("!schedule"):
+
+                """
+                This command will add a match to the scheduled matches
+                """
+
+                try:
+                    r = message.content.split()[1]
+                    if r == "clear":
+                        settings.db.settings.update({}, {"$unset":{"matches":"empty"}})
+                        await client.send_message(message.channel, "**Cleared schedule successfully**")
+
+                    else:
+                        p1 = str(message.mentions[0])
+                        p2 = str(message.mentions[1])
+                        settings.matches = {}
+
+                        try :
+                            settings.matches[r].append(p1+" VS "+p2)
+                            settings.db.settings.update_one({}, {"$set":{"matches":settings.matches}}, upsert=True)
+
+                        except KeyError:
+                            settings.matches[r] = [p1+" VS "+p2]
+                            settings.db.settings.update_one({}, {"$set":{"matches":settings.matches}}, upsert=True)
+
+                    importlib.reload(settings)
+
+                except Exception as e:
+                    print(str(e))
+                    await client.send_message(message.channel, "**Invalid command**")
+
     except Exception as e:
         s = funcs.log(str(e))
         await client.send_message(discord.utils.get(client.get_all_channels(), server__name=settings.serverName, name='halite'), s)
@@ -610,7 +706,7 @@ async def on_member_join(member):
     await client.add_roles(member, role)
     funcs.log("Member joined : "+str(member))
     await client.send_message(discord.utils.get(client.get_all_channels(), server__name=settings.serverName, name='general'),
-        "Welcome "+member.mention+" to Halite Tournaments! Check out the section "+channel.mention+" for information about the upcoming tournaments! <:logo:416779058924355596>")
+        "Welcome "+member.mention+" to Halite Tournaments! Check out the section "+channel.mention+" for information about the upcoming tournaments! "+settings.emojis["logo"])
 
 
 if __name__ == '__main__':

@@ -97,7 +97,7 @@ async def uploadBot(link, username, fileName):
                                 if f.replace('MyBot.', '') == "py" and os.path.isfile(save+"requirements.txt"):
                                     lib = os.popen("cd "+save+" && pip3 install -r "+save+"requirements.txt").read()
 
-                                elif r.replace('MyBot', '') == "js" and os.path.isfile(save+"package.json"):
+                                elif f.replace('MyBot', '') == "js" and os.path.isfile(save+"package.json"):
                                     lib = os.popen("cd "+save+" && npm install").read()
                                 break
 
@@ -182,7 +182,7 @@ async def compileBot(player):
 
     secs = 0
     text = "took too much time to compile! Max is "+str(settings.compileOut)+"s"
-    while secs <= settings.compileOut:
+    while secs <= 140:
         q = settings.db.queues.find_one({"_id":queueId})
         if q.get("status") == "finished":
             if q.get("success"):
@@ -266,7 +266,7 @@ async def battle(p1, p2, width, height, official):
 
                 secs = 0
                 status = "**Battle took too much time! Max is "+str(settings.runOut)+"s**"
-                while secs <= settings.runOut: #time same as env/handler.py
+                while secs <= 120: #time same as env/handler.py
                     q = settings.db.queues.find_one({"_id":queueId})
                     if q.get("status") == "finished" and os.path.isfile(q.get("logfile")):
                         if os.path.isfile(settings.path+"/../env/out/"+battleName+".hlt"):
@@ -303,7 +303,7 @@ async def battle(p1, p2, width, height, official):
 
                 secs = 0
                 status = "**Match took too much time! Max is "+str(settings.runOut*settings.runs)+"s**"
-                while secs <= settings.runOut*settings.runs:
+                while secs <= 120*settings.runs:
                     q = settings.db.queues.find_one({"_id":queueId})
                     if q.get("status") == "finished":
                         if os.path.exists(settings.path+"/../env/out/"+battleName+"/battle.log"):

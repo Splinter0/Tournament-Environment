@@ -1,7 +1,7 @@
 {
-	"server": "HaliteTournaments",
-	"submit": false,
-	"onTour": false,
+	"server": "TestBots",
+	"submit": true,
+	"onTour": true,
 	"matches": {},
 	"season": "3",
 	"specs": "",
@@ -10,10 +10,32 @@
 	"infos": "",
 	"timeSub": "",
 	"engineLink": "",
-	"token": "",
+	"token": "NDE3NzM3NjAwMDExNTk5ODkz.DXsY3A.NmNoGlcZEDK2Dafpo_mJgYMjlPE",
 	"admins": [
 		"Splinter#4298",
 		"Frank Whoee#1338"
 	],
-	"runs":5
+	"runs":5,
+	"engine":[
+		"season-3/win.zip",
+		"season-3/mac.zip",
+		"season-3/linux.zip"
+	],
+	"emojis":{
+	    "logo":"<:logo:416779058924355596>",
+	    "aspiring":"<:aspiringcoder:419920520901951508>",
+	    "dollar":"<:HTDollar:419938437831983144>",
+	    "survivor":"<:survivor:419920113483907072>",
+	    "silver":"<:silver:412834212412915712>",
+	    "rock":"<:rock:439608663225794571>",
+	    "platinum":"<:platinum:412834211549020162>",
+	    "explosion":"<:planet_explosion:414562885591629834>",
+	    "planet":"<:planet:414564462180302858>",
+	    "paper":"<:paper:439608662776872970>",
+	    "scissors":"<:HTscissors:439608663909335040>",
+	    "gold":"<:gold:412834211645489152>",
+	    "engine":"<:engine:430404452940513302>",
+	    "diamond":"<:diamond:412834212224303105>",
+	    "bronze":"<:bronze:412834210945040384>"
+	}
 }

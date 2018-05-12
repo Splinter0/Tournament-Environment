@@ -1,0 +1,83 @@
+INFO:root:Initialized bot HTBot-v1
+INFO:root:---NEW TURN---
+INFO:root:HTBot-v1 Start
+INFO:root:---NEW TURN---
+INFO:root:Move : 8-MoveType.EXPLORE assigned to ships : [8] targeting : 0
+INFO:root:Move : 8-MoveType.EXPLORE assigned to ships : [8, 9] targeting : 0
+INFO:root:Move : 5-MoveType.EXPLORE assigned to ships : [5] targeting : 6
+INFO:root:Move : 5-MoveType.EXPLORE assigned to ships : [5, 6] targeting : 6
+INFO:root:Move : 5-MoveType.EXPLORE assigned to ships : [5, 6, 7] targeting : 6
+INFO:root:Done turn, n.1
+INFO:root:---NEW TURN---
+INFO:root:Move : 8-MoveType.EXPLORE assigned to ships : [8, 9] targeting : 0
+INFO:root:Move : 8-MoveType.EXPLORE assigned to ships : [8, 9] targeting : 0
+INFO:root:Move : 5-MoveType.EXPLORE assigned to ships : [5, 6, 7] targeting : 6
+INFO:root:Move : 5-MoveType.EXPLORE assigned to ships : [5, 6, 7] targeting : 6
+INFO:root:Move : 5-MoveType.EXPLORE assigned to ships : [5, 6, 7] targeting : 6
+INFO:root:Done turn, n.2
+INFO:root:---NEW TURN---
+INFO:root:Move : 8-MoveType.EXPLORE assigned to ships : [8, 9] targeting : 0
+INFO:root:Move : 8-MoveType.EXPLORE assigned to ships : [8, 9] targeting : 0
+INFO:root:Move : 5-MoveType.EXPLORE assigned to ships : [5, 6, 7] targeting : 6
+INFO:root:Move : 5-MoveType.EXPLORE assigned to ships : [5, 6, 7] targeting : 6
+INFO:root:Move : 5-MoveType.EXPLORE assigned to ships : [5, 6, 7] targeting : 6
+INFO:root:Done turn, n.3
+INFO:root:---NEW TURN---
+INFO:root:Move : 8-MoveType.EXPLORE assigned to ships : [8] targeting : 0
+INFO:root:Move : 8-MoveType.EXPLORE assigned to ships : [8, 9] targeting : 0
+INFO:root:Move : 5-MoveType.EXPLORE assigned to ships : [5, 6, 7] targeting : 6
+INFO:root:Move : 5-MoveType.EXPLORE assigned to ships : [5, 6, 7] targeting : 6
+INFO:root:Move : 5-MoveType.EXPLORE assigned to ships : [5, 6, 7] targeting : 6
+INFO:root:Done turn, n.4
+INFO:root:---NEW TURN---
+INFO:root:Detected rush by enemy by ship:9
+INFO:root:Move : 9-MoveType.AVOID_RUSH assigned to ships : [9] targeting : 4
+INFO:root:Ship 9 will collide with ship 8
+INFO:root:Ship 9 will collide with ship 8
+INFO:root:Ship 9 will collide with ship 8
+INFO:root:Ship 9 will collide with ship 8
+INFO:root:Ship 9 will collide with ship 8
+INFO:root:Ship 9 will collide with ship 8
+INFO:root:Ship 9 will collide with ship 8
+INFO:root:Ship 9 will collide with ship 8
+INFO:root:Ship 9 will collide with ship 8
+INFO:root:Move : 5-MoveType.EXPLORE assigned to ships : [5, 6, 7] targeting : 6
+INFO:root:Done turn, n.5
+INFO:root:---NEW TURN---
+INFO:root:Detected rush by enemy by ship:9
+INFO:root:Move : 9-MoveType.AVOID_RUSH assigned to ships : [9] targeting : 4
+INFO:root:Done turn, n.6
+INFO:root:---NEW TURN---
+INFO:root:Detected rush by enemy by ship:9
+INFO:root:Move : 9-MoveType.AVOID_RUSH assigned to ships : [9] targeting : 4
+INFO:root:Done turn, n.7
+INFO:root:---NEW TURN---
+INFO:root:Detected rush by enemy by ship:9
+INFO:root:Move : 9-MoveType.AVOID_RUSH assigned to ships : [9] targeting : 4
+INFO:root:Done turn, n.8
+INFO:root:---NEW TURN---
+INFO:root:Detected rush by enemy by ship:9
+INFO:root:Move : 9-MoveType.AVOID_RUSH assigned to ships : [9] targeting : 4
+INFO:root:Done turn, n.9
+INFO:root:---NEW TURN---
+INFO:root:Detected rush by enemy by ship:9
+INFO:root:Move : 9-MoveType.AVOID_RUSH assigned to ships : [9] targeting : 4
+INFO:root:Done turn, n.10
+INFO:root:---NEW TURN---
+INFO:root:Move : 9-MoveType.EXPLORE assigned to ships : [9] targeting : 0
+INFO:root:Done turn, n.11
+INFO:root:---NEW TURN---
+INFO:root:Move : 9-MoveType.EXPLORE assigned to ships : [9] targeting : 0
+INFO:root:Done turn, n.12
+INFO:root:---NEW TURN---
+INFO:root:Move : 9-MoveType.ATTACK assigned to ships : [9] targeting : 4
+INFO:root:Done turn, n.13
+INFO:root:---NEW TURN---
+INFO:root:Done turn, n.14
+INFO:root:---NEW TURN---
+INFO:root:Done turn, n.15
+INFO:root:---NEW TURN---
+INFO:root:Done turn, n.16
+INFO:root:---NEW TURN---
+INFO:root:Done turn, n.17
+INFO:root:---NEW TURN---

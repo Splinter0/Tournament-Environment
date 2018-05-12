@@ -1,3 +1,5 @@
 #Creating this in order to keep directory empty
 *
 !.gitignore
+!halite#7598
+!halite#7598/*

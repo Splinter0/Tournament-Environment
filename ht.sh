@@ -1,1 +1,1 @@
-python3 handler/main.py "$@"
+python3 handler/main.py

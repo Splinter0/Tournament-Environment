@@ -11,6 +11,7 @@ a function to set everything up automatically.
 for more info about the database structure check
 ../db
 """
+
 username = urllib.parse.quote_plus('root')
 password = urllib.parse.quote_plus('')
 mongo = MongoClient('mongodb://%s:%s@localhost:27017/' % (username, password))
@@ -35,9 +36,7 @@ specs = s.get('specs')  #Tournament specs
 engineLink = s.get('engineLink') #Link with info about engine
 handlerUser = s.get('handlerUser') #Username of the user that runs enviroment handler
 runs = int(s.get('runs')) #How many battles in a match
+engine = s.get('engine')
+emojis = s.get('emojis')
 
-emojis = {
-    "logo":"<:logo:416779058924355596>",
-    "aspiring":"<:aspiringcoder:419920520901951508>",
-    "dollar":"<:HTDollar:419938437831983144>"
-}
+print("Loaded Settings")
