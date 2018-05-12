@@ -1,5 +1,5 @@
 {
-	"server": "TestBots",
+	"server": "HaliteTournaments",
 	"submit": true,
 	"onTour": true,
 	"matches": {},
@@ -10,7 +10,7 @@
 	"infos": "",
 	"timeSub": "",
 	"engineLink": "",
-	"token": "NDE3NzM3NjAwMDExNTk5ODkz.DXsY3A.NmNoGlcZEDK2Dafpo_mJgYMjlPE",
+	"token": "",
 	"admins": [
 		"Splinter#4298",
 		"Frank Whoee#1338"
