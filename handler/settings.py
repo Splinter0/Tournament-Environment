@@ -36,7 +36,8 @@ specs = s.get('specs')  #Tournament specs
 engineLink = s.get('engineLink') #Link with info about engine
 handlerUser = s.get('handlerUser') #Username of the user that runs enviroment handler
 runs = int(s.get('runs')) #How many battles in a match
-engine = s.get('engine')
-emojis = s.get('emojis')
+engine = s.get('engine') #Engine information
+emojis = s.get('emojis') #Emojis
+opened = s.get('open') #Check if submissions are opened for everyone
 
 print("Loaded Settings")

@@ -10,6 +10,7 @@ This is the code that we run on our server to interact with our discord
 community, which is where we organize and run all our tournaments.
 
 Join our discord server : https://discord.gg/Q2nDHnn
+GitHub Page : https://halitetournaments.github.io/
 
 ## Dependencies
 
@@ -71,7 +72,7 @@ He has access to all project folders.
 - Fairly big cash prizes
 - Include Halite-I tournaments for the vintage fans :laughing:
 
-#TODO
+## TODO
 
 - Modify the engine for season-III
 - Improve graphics of the messages with Embed

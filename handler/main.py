@@ -87,20 +87,22 @@ async def on_message(message):
                 - Runs a test game against itself to make sure it works
                 - Sends logs and compiler outputs via DM to the player
             """
-
-            player = discord.utils.get(server.roles, name="Player")
+            
             isPlayer = False
-            for m in server.members:
-                if str(m) == str(message.author):
-                    roles = m.roles
-                    if player in roles:
-                        isPlayer = True
+            if not settings.opened:
+                player = discord.utils.get(server.roles, name="Player")
+                for m in server.members:
+                    if str(m) == str(message.author):
+                        roles = m.roles
+                        if player in roles:
+                            isPlayer = True
 
-            if not settings.submit and isPlayer: #if the submissions are closed
+            if not settings.submit and isPlayer and not settings.opened: #if the submissions are closed
                 if not message.channel.is_private:
                     await client.delete_message(message)
                 await client.send_message(message.channel, "**Submissions are closed at the moment!** "+message.author.mention)
-            elif isPlayer:
+
+            elif isPlayer or settings.opened:
                 if str(message.channel) != "season-"+settings.season and str(message.channel) != "battles" and not message.channel.is_private: #if message is in the wrong channel
                     if not message.channel.is_private:
                         await client.delete_message(message)
@@ -641,6 +643,19 @@ async def on_message(message):
 
                 else :
                     await client.send_message(message.channel, "!submissions")
+
+            elif message.content.startswith("!open"):
+                try:
+                    s = message.content.replace("!open", "").split()
+                    if s != "":
+                        boo = funcs.str_to_bool(s[0])
+                        settings.db.settings.update_one({}, {"$set":{"open":boo}})
+
+                        settings.opened = boo
+                        await client.send_message(message.channel, "**Setting : "+s[0]+" in opened submissions**")
+
+                except:
+                    await client.send_message(message.channel, "**Invalid command**")
 
             elif message.content.startswith("!ontour"): #chane onTour status
 
