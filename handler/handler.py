@@ -200,7 +200,7 @@ class Arena(threading.Thread):
                     if output.splitlines(True)[-3].startswith("Opening"):
                         replay = output.splitlines(True)[-3].split()[4]
                         os.rename(replay, self.out+"/"+str(b+1)+".hlt")
-                        self.results.append([self.p1.get("username")+" came in rank "+output.splitlines(True)[-2].split()[6], self.p2.get("username")+" came in rank "+output.splitlines(True)[-1].split()[6]])
+                        self.results.append([output.splitlines(True)[-2], output.splitlines(True)[-1]])
                         zipped.write(self.out+"/"+str(b+1)+".hlt", arcname=str(b+1)+".hlt")
                         success = True
                     else :
@@ -227,7 +227,8 @@ class Arena(threading.Thread):
                 if output.splitlines(True)[-3].startswith("Opening"):
                     replay = output.splitlines(True)[-3].split()[4]
                     os.rename(replay, self.out+".hlt")
-                    self.results.append([self.p1.get("username")+" came in rank "+output.splitlines(True)[-2].split()[6], self.p2.get("username")+" came in rank "+output.splitlines(True)[-1].split()[6]])
+                    self.results.append([' '.join(output.splitlines(True)[-2].split()[2:])+"\n", ' '.join(output.splitlines(True)[-1].split()[2:])])
+                    #self.results.append([self.p1.get("username")+" came in rank "+output.splitlines(True)[-2].split()[6], self.p2.get("username")+" came in rank "+output.splitlines(True)[-1].split()[6]])
                     success = True
                 else :
                     self.log += "ERROR RUNNING BATTLE:\n\n"+output
@@ -241,7 +242,7 @@ class Arena(threading.Thread):
         num = 1
         for r in self.results:
             if len(r) == 2:
-                self.log += "Round number : "+str(num)+"\n"+r[0]+"\n"+r[1]+"\n\n"
+                self.log += "Round number : "+str(num)+"\n"+r[0]+"\n"+r[1]+"\n\n\n"
             else:
                 break
             num += 1

@@ -7,7 +7,7 @@ sudo pip3 install discord
 #install mongoDB API
 sudo pip3 install pymongo
 #install cmake
-sudo apt-get cmake
+sudo apt-get install cmake
 #install rust
 curl -sf -L https://static.rust-lang.org/rustup.sh | sh
 #install java

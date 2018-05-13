@@ -36,7 +36,7 @@ def getTime():
     speed things up
     """
 
-    return ('{:%Y-%m-%d %H:%M:%S}').format(datetime.datetime.now())
+    return ('{:%Y-%m-%d %H:%M:%S}').format(datetime.datetime.utcnow())
 
 def str_to_bool(s):
 

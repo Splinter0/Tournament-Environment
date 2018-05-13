@@ -71,14 +71,10 @@ He has access to all project folders.
 - Fairly big cash prizes
 - Include Halite-I tournaments for the vintage fans :laughing:
 
-## TODO
+#TODO
 
-- Add more languages support
-- Add suggestions from season-2:
-  ```
-  - Logs for make failures on submission
-  - Include damage, ships created in log for battles
-  ```
+- Modify the engine for season-III
+- Improve graphics of the messages with Embed
 
 ## Contribute!
 

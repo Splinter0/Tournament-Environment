@@ -10,16 +10,16 @@ import importlib
 client = discord.Client()
 
 commands = {"!help":"Show this message",
-            "!submit":"Select your file and write this as a comment to submit your bot, you this in the season-"+settings.season+" to submit for the tournament",
+            "!submit":"Select your file and write this as a comment to submit your bot, you this in the **season-"+settings.season+"** to submit for the tournament",
             "!rules":"Display the rules of the current tournament",
             "!brackets":"Check current brackets",
             "!matches":"Print upcoming matches, tag a user after to check his upcoming matches",
             "!submissions":"Check if submissions are opened/closed and when they close/open",
-            "!languages":"Check supported languages for submissions, add a language name to know how it's compiled/run e.g. !language python",
-            "!battle":"Run a match between two players, \n\t!battle [p1] [p2] [height map] [width map] [bet]\n\tYou can write \"bet\" at the end of the command to automatically create a bet on the game with Vegas\n",
+            "!languages":"Check supported languages for submissions, add a language name to know how it's compiled/run \n\t*!language python*",
+            "!battle":"Run a match between two players, \n\t*!battle [p1] [p2] [height map] [width map] [bet]* \n\tdo this in the **#battles channel**",
             "!donations":"Get infos about donations",
             "!specs":"Check tournament specs",
-            "!engine":"Know how to get the engine of the current tournament, !engine [win/mac/linux]",
+            "!engine":"Know how to get the engine of the current tournament, \n\t*!engine [win/mac/linux]*",
             "!result":"Result [n of the battle], to show the results of battle with bet on",
             "!results":"Show all the battles with bets that are still hidden",
             "!players":"Check who signed up for this season and if they submitted a bot"}
@@ -31,7 +31,9 @@ adminCommands = {"!subs":"!subs True/False opens or closes submissions",
                  "!post":"!post [path to file in the server] [channel, se * to Select current] to post a file from the server",
                  "!ontour":"!ontour True/False to change the current tournament status",
                  "!admin":"Print this message",
-                 "!time":"Change time of submissions"}
+                 "!time":"Change time of submissions",
+                 "!schedule":"Schedule a match for a given round\n\t!schedule Finals [p1] [p2], !schedule clear to clear schedule",
+                 "!embed":"Create embed message, !embed [title] | [content]"}
 
 results = {}
 global res
@@ -49,6 +51,20 @@ async def on_ready(): #startup
         print("Interaction with Vegas enabled")
     except:
         print("Interaction with Vegas not avaible")
+
+    battles = discord.utils.get(client.get_all_channels(), server__name=settings.serverName, name='battles')
+    embed = discord.Embed(title="HTBot is back!", description="Get over to "+battles.mention+" and have some fun! "+settings.emojis["explosion"], color=0xffae00)
+    embed.set_thumbnail(url="https://raw.githubusercontent.com/Splinter0/Tournament-Environment/master/imgs/logo.png")
+    s = "Opened" if settings.submit else "Closed"
+    embed.add_field(name="Currently on Season-"+settings.season, value="Check the schedule for more info!", inline=False)
+    embed.add_field(name="Submissions status :", value=s, inline=True)
+    embed.add_field(name="Sign up link :", value="https://goo.gl/forms/WaabWsdrQkw8f84x2", inline=False)
+    embed.set_footer(text=funcs.getTime()+" (UTC) - HTBot")
+
+    general = discord.utils.get(client.get_all_channels(), server__name=settings.serverName, name='general')
+
+    await client.send_message(general, embed=embed)
+    await client.change_presence(game=discord.Game(name="Running Season-"+settings.season+" | !help"))
 
 @client.event
 async def on_message(message):
@@ -87,7 +103,6 @@ async def on_message(message):
             elif isPlayer:
                 if str(message.channel) != "season-"+settings.season and str(message.channel) != "battles" and not message.channel.is_private: #if message is in the wrong channel
                     if not message.channel.is_private:
-                        print("esk1")
                         await client.delete_message(message)
                     await client.send_message(message.channel, "**Cannot use this command in this channel!** "+message.author.mention)
                 else:
@@ -95,7 +110,6 @@ async def on_message(message):
                         await client.send_message(message.channel, "`Submitting, compiling and testing your bot...` "+message.author.mention)
                         response, compileLog = await funcs.uploadBot(message.attachments[0].get('url'), str(message.author), message.attachments[0].get('filename'))
                         if not message.channel.is_private:
-                            print("esk2")
                             await client.delete_message(message)
                         await client.send_message(message.channel, "`"+response+"` "+message.author.mention)
                         if compileLog != "": #if compiled and run successfully
@@ -107,8 +121,6 @@ async def on_message(message):
 
             else:
                 await client.send_message(message.channel, "**You are not a Player! Sign up for the tournament first!** "+message.author.mention)
-
-
 
         elif message.content.startswith("!submissions"): #check submissions
 
@@ -131,13 +143,20 @@ async def on_message(message):
             other commands with a brief explaination
             """
 
-            await client.send_message(message.channel, "**Running season : "+settings.season+"** "+settings.emojis["logo"])
+            #await client.send_message(message.channel, "**Running season : "+settings.season+"** "+settings.emojis["logo"])
 
-            text = "```\n"
+            battles = discord.utils.get(client.get_all_channels(), server__name=settings.serverName, name='battles')
+            embed = discord.Embed(title="Commands for HTBot", description="Currently on Season-"+settings.season, color=0xffae00)
+            embed.set_thumbnail(url="https://raw.githubusercontent.com/Splinter0/Tournament-Environment/master/imgs/logo.png")
+
+            #text = "```\n"
             for k,c in sorted(commands.items()):
-                text += k + " : " + c + "\n"
-            text += "```"
-            await client.send_message(message.channel, text)
+                #text += k + " : " + c + "\n"
+                embed.add_field(name=k, value=c, inline=False)
+            #text += "```"
+            #await client.send_message(message.channel, text)
+            await client.send_message(message.channel, embed=embed)
+
 
         elif message.content.startswith("!rules"): #print info about the tournament
 
@@ -278,12 +297,12 @@ async def on_message(message):
                             await client.send_file(message.mentions[0], log1)
                             os.remove(log1)
 
-                        if log2 != "":
+                        if log2 != "" and p1 != p2:
                             await client.send_message(message.mentions[1], "**Here is the logfile of your bot : (timstamp battle : "+funcs.getTime()+")**")
                             await client.send_file(message.mentions[1], log2)
                             os.remove(log2)
 
-                except (KeyError, IndexError): #formatting error
+                except (KeyError, IndexError) : #formatting error
                     await client.send_message(message.channel, "**Bad formatting! Run !help for info about commands**")
 
             elif str(message.channel) != "battles": #wrong channel!
@@ -358,9 +377,14 @@ async def on_message(message):
                     else:
                         players[str(m)] = True
 
-            text = "**Here are all the players in this season :**\n"
-            for p, s in players.items():
-                text += "\n`"+p+"`, has submitted : *"+str(s)+"*"
+            if len(players) > 0:
+                text = "**Here are all the players in this season :** "+settings.emojis["aspiring"]+"\n"
+                for p, s in players.items():
+                    r = "Yes" if s else "No"
+                    text += "\n`"+p+"`, has submitted : *"+r+"*"
+
+            else:
+                text = "**No registered player at the moment!** "+settings.emojis["aspiring"]
 
             await client.send_message(message.channel, text)
 
@@ -446,7 +470,7 @@ async def on_message(message):
                     text = s.read()+"\n"+settings.emojis["logo"]+settings.emojis["planet"]
 
             except FileNotFoundError:
-                text = "**Specs for season-"+settings.season+" are still not out**"
+                text = "**Specs for season-"+settings.season+" are still not out!** "+settings.emojis["paper"]
 
             await client.send_message(message.channel, text)
 
@@ -664,6 +688,26 @@ async def on_message(message):
                 else:
                     await client.send_message(message.channel, "**Invalid command**")
 
+            elif message.content.startswith("!embed"):
+                try:
+                    content = message.content.split()[1:]
+                    t = []
+                    for w in content:
+                        if w == "|":
+                            break
+                        else:
+                            t.append(w)
+                    title = ' '.join(t)
+                    content = ' '.join(content[len(t)+1:])
+
+                    embed = discord.Embed(title=title, description=content, color=0xffae00)
+                    embed.set_thumbnail(url="https://raw.githubusercontent.com/Splinter0/Tournament-Environment/master/imgs/logo.png")
+                    await client.send_message(message.channel, embed=embed)
+                    await client.delete_message(message)
+
+                except:
+                    await client.send_message(message.channel, "**Invalid command**")
+
             elif message.content.startswith("!schedule"):
 
                 """
@@ -690,9 +734,9 @@ async def on_message(message):
                             settings.db.settings.update_one({}, {"$set":{"matches":settings.matches}}, upsert=True)
 
                     importlib.reload(settings)
+                    await client.send_message(message.channel, "**Scheduled match successfully**")
 
-                except Exception as e:
-                    print(str(e))
+                except:
                     await client.send_message(message.channel, "**Invalid command**")
 
     except Exception as e:
