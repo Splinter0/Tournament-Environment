@@ -12,7 +12,7 @@ from pymongo import MongoClient
 #these will be hardcoded until we have
 #a function to set everything up automatically
 username = urllib.parse.quote_plus('arena')
-password = urllib.parse.quote_plus(')O2BK%bm1v}*A?U5rYndr=mik>9QBLq^Sb|5^vork{KxE4(A')
+password = urllib.parse.quote_plus('')
 mongo = MongoClient('mongodb://%s:%s@localhost:27017/halite-tournaments' % (username, password))
 
 db = mongo["halite-tournaments"]

@@ -13,7 +13,7 @@ for more info about the database structure check
 """
 
 username = urllib.parse.quote_plus('root')
-password = urllib.parse.quote_plus('G{MHqFxOzrR*12GVf:ktScq1=Xzi0_QGgKMW9z0nylr9W*|#')
+password = urllib.parse.quote_plus('')
 mongo = MongoClient('mongodb://%s:%s@localhost:27017/' % (username, password))
 
 db = mongo["halite-tournaments"]

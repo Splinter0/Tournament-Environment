@@ -20,3 +20,14 @@
   "default":["240", "160"],
   "halite":"/../env/halite"
 }
+{
+  "username" : "halite#7598",
+	"path" : "/home/ht-team/Tournament-Environment/bots/testESKERE#1378",
+	"lang" : "java",
+	"commands" : [
+		"javac MyBot.java",
+		"java MyBot"
+	],
+	"flagged" : false,
+	"running" : false
+}
