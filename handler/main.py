@@ -1,6 +1,7 @@
 import discord
 import asyncio
 import os
+import pexpect
 import json
 import funcs
 import settings
@@ -11,18 +12,16 @@ client = discord.Client()
 
 commands = {"!help":"Show this message",
             "!submit":"Select your file and write this as a comment to submit your bot, you this in the **season-"+settings.season+"** to submit for the tournament",
-            "!rules":"Display the rules of the current tournament",
             "!brackets":"Check current brackets",
             "!matches":"Print upcoming matches, tag a user after to check his upcoming matches",
             "!submissions":"Check if submissions are opened/closed and when they close/open",
             "!languages":"Check supported languages for submissions, add a language name to know how it's compiled/run \n\t*!language python*",
-            "!battle":"Run a match between two players, \n\t*!battle [p1] [p2] [height map] [width map] [bet]* \n\tdo this in the **#battles channel**",
+            "!battle":"Run a match between two players, \n\t*!battle [players tags] [height map] [width map] [2v2]* \n\tdo this in the **#battles channel**",
             "!donations":"Get infos about donations",
             "!specs":"Check tournament specs",
             "!engine":"Know how to get the engine of the current tournament, \n\t*!engine [win/mac/linux]*",
-            "!result":"Result [n of the battle], to show the results of battle with bet on",
-            "!results":"Show all the battles with bets that are still hidden",
-            "!players":"Check who signed up for this season and if they submitted a bot"}
+            "!players":"Check who signed up for this season and if they submitted a bot",
+            "!utc":"Get current UTC time, make sure to check it now and then."}
 
 adminCommands = {"!subs":"!subs True/False opens or closes submissions",
                  "!brk":"To add as a comment with the brackets image to update it",
@@ -33,24 +32,35 @@ adminCommands = {"!subs":"!subs True/False opens or closes submissions",
                  "!admin":"Print this message",
                  "!time":"Change time of submissions",
                  "!schedule":"Schedule a match for a given round\n\t!schedule Finals [p1] [p2], !schedule clear to clear schedule",
-                 "!embed":"Create embed message, !embed [title] | [content]"}
+                 "!embed":"Create embed message, !embed [title] | [content]",
+                 "!open":"!open True/False to open or close submissions from non-players"}
 
 results = {}
 global res
 res = 0
+
 global haliteVegas
 haliteVegas = None
+global haliteBackup
+haliteBackup = None
 
 @client.event
 async def on_ready(): #startup
     print("\nBot "+client.user.name+" ready to operate!")
     print("-------\n")
     global haliteVegas
+    global haliteBackup
     try:
         haliteVegas = discord.utils.get(client.get_all_channels(), server__name=settings.serverName, name='halite-vegas')
         print("Interaction with Vegas enabled")
     except:
         print("Interaction with Vegas not avaible")
+
+    try:
+        haliteBackup = discord.utils.get(client.get_all_channels(), server__name=settings.serverName, name='halite-backup')
+        print("Interaction with HT-Backup enabled")
+    except:
+        print("Interaction with HT-Backup not avaible")
 
     battles = discord.utils.get(client.get_all_channels(), server__name=settings.serverName, name='battles')
     embed = discord.Embed(title="HTBot is back!", description="Get over to "+battles.mention+" and have some fun! "+settings.emojis["explosion"], color=0xffae00)
@@ -58,7 +68,7 @@ async def on_ready(): #startup
     s = "Opened" if settings.submit else "Closed"
     embed.add_field(name="Currently on Season-"+settings.season, value="Check the schedule for more info!", inline=False)
     embed.add_field(name="Submissions status :", value=s, inline=True)
-    embed.add_field(name="Sign up link :", value="https://goo.gl/forms/WaabWsdrQkw8f84x2", inline=False)
+    embed.add_field(name="Sign up link :", value=settings.signup, inline=False)
     embed.set_footer(text=funcs.getTime()+" (UTC) - HTBot")
 
     general = discord.utils.get(client.get_all_channels(), server__name=settings.serverName, name='general')
@@ -70,6 +80,7 @@ async def on_ready(): #startup
 async def on_message(message):
 
     server = discord.utils.get(client.servers, name=settings.serverName)
+    backup = discord.utils.get(client.get_all_channels(), server__name=settings.serverName, name='halite-backup')
 
     try :
         if message.content.startswith("!submit"):
@@ -87,7 +98,7 @@ async def on_message(message):
                 - Runs a test game against itself to make sure it works
                 - Sends logs and compiler outputs via DM to the player
             """
-            
+
             isPlayer = False
             if not settings.opened:
                 player = discord.utils.get(server.roles, name="Player")
@@ -113,6 +124,10 @@ async def on_message(message):
                         response, compileLog = await funcs.uploadBot(message.attachments[0].get('url'), str(message.author), message.attachments[0].get('filename'))
                         if not message.channel.is_private:
                             await client.delete_message(message)
+                        else:
+                            #TODO add full implementation
+                            global haliteBackup
+                            #await client.send_message(haliteBackup, ">store ")
                         await client.send_message(message.channel, "`"+response+"` "+message.author.mention)
                         if compileLog != "": #if compiled and run successfully
                             await client.send_message(message.author, "**Here your compile and run log for yout bot submission!**")
@@ -136,7 +151,13 @@ async def on_message(message):
                 s, s2 = "opened", "close"
             else :
                 s, s2 = "closed", "open"
-            await client.send_message(message.channel, "**Current status of submissions : "+s+", the submissions will "+s2+" : "+settings.timeSub+"**"+" "+settings.emojis["logo"])
+
+            desc = "Current status of submissions : **"+s+"**,\nthe submissions will "+s2+" : **"+settings.timeSub+"**"
+            embed = discord.Embed(title="Submissions for Season-"+settings.season, description=desc, color=0xffae00)
+            embed.set_thumbnail(url="https://raw.githubusercontent.com/Splinter0/Tournament-Environment/master/imgs/logo.png")
+            embed.set_footer(text=funcs.getTime()+" (UTC) - HTBot")
+
+            await client.send_message(message.channel, embed=embed)
 
         elif message.content.startswith("!help"): #help function
 
@@ -145,40 +166,19 @@ async def on_message(message):
             other commands with a brief explaination
             """
 
-            #await client.send_message(message.channel, "**Running season : "+settings.season+"** "+settings.emojis["logo"])
-
             battles = discord.utils.get(client.get_all_channels(), server__name=settings.serverName, name='battles')
             embed = discord.Embed(title="Commands for HTBot", description="Currently on Season-"+settings.season, color=0xffae00)
             embed.set_thumbnail(url="https://raw.githubusercontent.com/Splinter0/Tournament-Environment/master/imgs/logo.png")
+            embed.set_footer(text=funcs.getTime()+" (UTC) - HTBot")
 
-            #text = "```\n"
             for k,c in sorted(commands.items()):
-                #text += k + " : " + c + "\n"
                 embed.add_field(name=k, value=c, inline=False)
-            #text += "```"
-            #await client.send_message(message.channel, text)
+
             await client.send_message(message.channel, embed=embed)
 
-
-        elif message.content.startswith("!rules"): #print info about the tournament
-
-            """
-            This command prints all the information about the
-            tournament such as : dates, rules and prizes
-            """
-
-            if settings.onTour:
-                try :
-                    with open(settings.infos, "r") as f:
-                        infos = f.read()
-                        infos = infos.replace("\\n","\n")
-                        await client.send_message(message.channel, infos+"\n"+settings.emojis["logo"])
-
-                except FileNotFoundError:
-                    await client.send_message(message.channel, "**Rules for current tournament are not ultimated!** "+settings.emojis["paper"])
-            else:
-                await client.send_message(message.channel, "**No tournament currently ongoing!**")
-
+        elif message.content.startswith("!utc"):
+            text = "**Current UTC time :** *"+funcs.getTime()+"*"
+            await client.send_message(message.channel, text)
 
         elif message.content.startswith("!matches"): #check upcoming matches
 
@@ -237,36 +237,50 @@ async def on_message(message):
             tournament. This feature is to allow the players to
             try out the game environment and debug their bots
             properly.
-            It also has an integration with our bot Vegas which
-            allows the player to hide the results and then
-            close the bets for a certain game.
             Example of a command :
-                !battle @Splinter @FrankWhoee 292 180 bet
+                !battle @Splinter @FrankWhoee 292 180
             This command starts a game between FrankWhoee and Splinter
-            with a map size of 292x180, also setting up a bet.
+            with a map size of 292x180.
             """
 
             #if we are in a tournament and in the right channel
             if settings.onTour and str(message.channel) == "battles" :
                 try:
-                    #get the two players from mentions
-                    p1 = str(message.mentions[0])
-                    try:
-                        p2 = str(message.mentions[1])
-                    except :
-                        p2 = str(message.mentions[0])
+                    #get the players from mentions
+                    pp = []
+                    for p in message.raw_mentions:
+                        pp.append(str(server.get_member(p)))
 
-                    bet = False
+                    mode = 0
+                    if message.content.split()[-1] == "2v2":
+                        if len(pp) == 1:
+                            for i in range(3):
+                                pp.append(pp[0])
+                        elif len(pp) == 2:
+                            for i in range(2):
+                                pp.append(pp[i])
+                        elif len(pp) == 3:
+                            pp.append(pp[-1])
+                        elif len(pp) > 4:
+                            raise IndexError
+                        mode = 2
+                    else:
+                        if len(pp) == 1:
+                            pp.append(pp[0])
+                        elif len(pp) == 3:
+                            pp.append(pp[-1])
+                            mode = 4
+                        elif len(pp) == 4:
+                            mode = 4
+
                     try :
                         #get the map sizes
-                        width = message.content.split()[3]
-                        height = message.content.split()[4]
-                        try:
-                            if message.content.split()[5] == "bet":
-                                bet = True
-
-                        except:
-                            pass
+                        if mode != 2:
+                            width = str(int(message.content.split()[-2]))
+                            height = str(int(message.content.split()[-1]))
+                        else:
+                            width = str(int(message.content.split()[-3]))
+                            height = str(int(message.content.split()[-2]))
 
                     except : #if there is a problem set default size
                         await client.send_message(message.channel, "*Using default size map : 240x160*")
@@ -274,35 +288,23 @@ async def on_message(message):
                         height = "160"
 
                     await client.send_message(message.channel, "*Running battle...* "+settings.emojis["logo"])
-                    status, result, log1, log2, replay = await funcs.battle(p1, p2, width, height, False)
-                    global haliteVegas
-                    if haliteVegas != None and bet:
-                        await client.send_message(haliteVegas, "!create "+message.mentions[0].mention+" "+message.mentions[1].mention)
+                    status, result, logs, replay = await funcs.battle(pp, width, height, mode)
 
                     await client.send_message(message.channel, status)
-
                     if result != "": #if we have an output
-                        if haliteVegas != None and bet and status.startswith("**Battle ran successfully"):
-                            global res
-                            results.update({str(res):{"author":str(message.author), "result":result, "battle":p1+"VS"+p2}})
-                            result = "**Hiding results until bet isn't closed, check output and close with !result "+str(res)+"** "+settings.emojis["dollar"]
-                            res += 1
-
                         await client.send_message(message.channel, result)
-
-                        if replay != "" and not bet:
+                        if replay != "":
                             await client.send_file(message.channel, replay)
 
                         #check if logs are present and send them
-                        if log1 != "":
-                            await client.send_message(message.mentions[0], "**Here is the logfile of your bot : (timstamp battle : "+funcs.getTime()+")**")
-                            await client.send_file(message.mentions[0], log1)
-                            os.remove(log1)
+                        for l in range(len(logs)):
+                            try:
+                                await client.send_message(message.mentions[l], "**Here is the logfile of your bot : (timstamp battle : "+funcs.getTime()+")**")
+                                await client.send_file(message.mentions[l], logs[l])
+                                os.remove(logs[l])
 
-                        if log2 != "" and p1 != p2:
-                            await client.send_message(message.mentions[1], "**Here is the logfile of your bot : (timstamp battle : "+funcs.getTime()+")**")
-                            await client.send_file(message.mentions[1], log2)
-                            os.remove(log2)
+                            except:
+                                pass
 
                 except (KeyError, IndexError) : #formatting error
                     await client.send_message(message.channel, "**Bad formatting! Run !help for info about commands**")
@@ -313,51 +315,6 @@ async def on_message(message):
 
             else: #tournament is closed
                 await client.send_message(message.channel, "**Feature not avaible at the moment!**")
-
-        elif message.content.startswith("!results"):
-
-            """
-            Command to show all the battles that are
-            opened to bets.
-            """
-
-            if len(results.items()) > 0:
-                text = "**Here are all battles open to bets!**\n```\n"
-                for num, r in results.items():
-                    text += "- Number : "+num+", battle is "+r.get("battle")+"\n"
-                text += "```"
-            else:
-                text = "**No battle with active bet at the moment!**"
-
-            await client.send_message(message.channel, text)
-
-        elif message.content.startswith("!result"):
-
-            """
-            Command to show the result of a battle
-            opened to bets, and close the bets
-            """
-            #TODO Add vegas interaction
-
-            try:
-                n = message.content.split()[1]
-
-                text = ""
-                for num, r in results.items():
-                    if r.get("author") == str(message.author) :
-                        if num == n:
-                            text = "**Here are the results of the battle n."+str(n)+":** \n"+r.get("result")
-                            break
-                        else:
-                            text = "**No battle with bet for number "+str(n)+"**"
-
-                    else:
-                        text = "**No battle with bet created by you!**"
-
-                await client.send_message(message.channel, text)
-
-            except IndexError : #formatting error
-                await client.send_message(message.channel, "**Bad formatting! Run !help for info about commands**")
 
         elif message.content.startswith("!players"):
 
@@ -419,35 +376,36 @@ async def on_message(message):
 
             m = message.content.split()
             if len(m) == 1:
-                t = "**Here are the languages supported for your bot:** "+settings.emojis["paper"]+"\n\n"
-                for l in sorted(funcs.languages.keys()):
-                    t += l+", "
-                t += "\n\nIf your language is **not supported** compile it in a `MyBot` file, or dm Splinter if you have problems"
+                embed = discord.Embed(title="Languages", description="All languages supported "+settings.emojis["paper"], color=0xffae00)
+                embed.set_thumbnail(url="https://raw.githubusercontent.com/Splinter0/Tournament-Environment/master/imgs/logo.png")
+                embed.set_footer(text=funcs.getTime()+" (UTC) - HTBot")
+
+                for k,c in sorted(funcs.languages.items()):
+                    content = "Compile command : "
+                    content += "*"+c[1]+"*" if c[1] != "" else "*not needed*"
+                    content += "\nRun command : *"+c[2]+"*"
+                    embed.add_field(name=k, value=content, inline=False)
+
+                await client.send_message(message.channel, embed=embed)
 
             else:
-                t = ""
-                for k,v in funcs.languages.items():
+                content = ""
+                for k,v in sorted(funcs.languages.items()):
                     if m[1] == k:
-                        if v[1] == "" :
-                            v[1] = "Not necessary"
+                        embed = discord.Embed(title=k, description="Specs for "+k+" "+settings.emojis["paper"], color=0xffae00)
+                        embed.set_thumbnail(url="https://raw.githubusercontent.com/Splinter0/Tournament-Environment/master/imgs/logo.png")
+                        embed.set_footer(text=funcs.getTime()+" (UTC) - HTBot")
+                        content = "*"+v[1]+"*" if v[1] != "" else "*not needed*"
+                        embed.add_field(name="Compile command", value=content, inline=False)
+                        content = "*"+v[2]+"*"
+                        embed.add_field(name="Run command :", value=content, inline=False)
 
-                        t += "**File extension : **`"+v[0]+"`, **Compile command : **`"+v[1]+"`, **Run command : **`"+v[2]+"`"
-
-                        if m[1] == "python":
-                            t+= "\n\n**External libraries installation command : **`pip3 install -r requirements.txt`"
-
-                        elif m[1] == "go":
-                            t += "\n\n**External libraries have to be included in your zip file properly**"
-
-                        elif m[1] == "javascript":
-                            t+= "\n\n**External libraries installation command : **`npm install`, which requires a **package.json** file!"
-
+                        await client.send_message(message.channel, embed=embed)
                         break
 
-                if t == "":
-                    t = "**Language not supported!**"
-
-            await client.send_message(message.channel, t)
+                if content == "":
+                    content = "**Language not supported!**"
+                    await client.send_message(message.channel, content)
 
         elif message.content.startswith("!donations"):
 
@@ -456,8 +414,13 @@ async def on_message(message):
             donate to this project
             """
 
-            text = "Donations are used to help support Halite Tournaments. We use your contributions to run our servers and give cash prizes. Donate here: https://www.paypal.me/HaliteTournaments. Donating will give you the **Contributor** role which has access to the Contributors voice channel. More privileges for Contributors will be coming!\n"+settings.emojis["logo"]+settings.emojis["paper"]
-            await client.send_message(message.channel, text)
+            embed = discord.Embed(title="Donations", description="Help the community grow!", color=0xffae00)
+            embed.set_thumbnail(url="https://raw.githubusercontent.com/Splinter0/Tournament-Environment/master/imgs/logo.png")
+            embed.set_footer(text=funcs.getTime()+" (UTC) - HTBot")
+            embed.add_field(name="PayPal", value="Donations are used to help support Halite Tournaments. We use your contributions to run our servers and give cash prizes.\nDonate here: https://www.paypal.me/HaliteTournaments.\nDonating will give you the **Contributor** role which has access to the Contributors voice channel. More privileges for Contributors will be coming!\n"+settings.emojis["paper"], inline=False)
+            embed.add_field(name="GitHub", value="You can also contribute by working with us on our repositories! Check it out at : https://github.com/HaliteTournaments", inline=False)
+
+            await client.send_message(message.channel, embed=embed)
 
         elif message.content.startswith("!specs"):
 
@@ -469,7 +432,9 @@ async def on_message(message):
 
             try :
                 with open(settings.specs, "r") as s:
-                    text = s.read()+"\n"+settings.emojis["logo"]+settings.emojis["planet"]
+                    infos = s.read()
+                    infos = infos.replace("\\n","\n")
+                    await client.send_message(message.channel, infos+"\n"+settings.emojis["logo"])
 
             except FileNotFoundError:
                 text = "**Specs for season-"+settings.season+" are still not out!** "+settings.emojis["paper"]
@@ -484,7 +449,6 @@ async def on_message(message):
             tournament. It will also give away a percompiled
             version of it.
             """
-            #TODO Add precompiled options
 
             if len(message.content.split()) > 1:
                 engine = None
@@ -540,18 +504,41 @@ async def on_message(message):
                 a zip file containing all replays of the games run in the match
                 """
 
-                if settings.onTour :
+                if settings.onTour:
                     try:
-                        #get the two players from mentions
-                        p1 = str(message.mentions[0])
-                        p2 = str(message.mentions[1])
+                        #get the players from mentions
+                        pp = []
+                        for p in message.raw_mentions:
+                            pp.append(str(server.get_member(p)))
 
-                        await client.send_message(message.channel, "*Running match...*")
-                        if haliteVegas != None:
-                            await client.send_message(haliteVegas, "!create "+message.mentions[0].mention+" "+message.mentions[1].mention)
-                        status, result, _, _, replay = await funcs.battle(p1, p2, "", "", True)
+                        mode = 1
+                        if message.content.split()[-1] == "2v2":
+                            if len(pp) == 1:
+                                for i in range(3):
+                                    pp.append(pp[0])
+                            elif len(pp) == 2:
+                                for i in range(2):
+                                    pp.append(pp[i])
+                            elif len(pp) == 3:
+                                pp.append(pp[-1])
+                            elif len(pp) > 4:
+                                raise IndexError
+                            mode = 3
+                        else:
+                            if len(pp) == 1:
+                                pp.append(pp[0])
+                            elif len(pp) == 3:
+                                pp.append(pp[-1])
+                                mode = 5
+                            elif len(pp) == 4:
+                                mode = 5
+
+                        await client.send_message(message.channel, "*Running match...* "+settings.emojis["logo"])
+                        #if haliteVegas != None:
+                        #    await client.send_message(haliteVegas, "!create "+message.mentions[0].mention+" "+message.mentions[1].mention)
+                        status, result, _, replay = await funcs.battle(pp, "", "", mode)
+
                         await client.send_message(message.channel, status)
-
                         if result != "": #if we have an output
                             await client.send_message(message.channel, result)
                             if replay != "":

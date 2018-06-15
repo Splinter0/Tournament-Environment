@@ -6,4 +6,4 @@ Here is where the battles are run using `halite`
 
 - `out/` - Output folder where replays and logs are stored
 - `halite` - Binary compiled with out constants
-- `halite-env/` - Files to build the binary
+- `Engine/` - Our current Engine, https://github.com/HaliteTournaments/Engine

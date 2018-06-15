@@ -1,0 +1,3 @@
+[submodule "env/Engine"]
+	path = env/Engine
+	url = https://github.com/HaliteTournaments/Engine.git

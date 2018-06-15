@@ -95,7 +95,7 @@ async def uploadBot(link, username, fileName):
                                 found = True
                                 lang = v
                                 if f.replace('MyBot.', '') == "py" and os.path.isfile(save+"requirements.txt"):
-                                    lib = os.popen("cd "+save+" && pip3 install -r "+save+"requirements.txt").read()
+                                    lib = os.popen("cd "+save+" && sudo -H pip3 install -r "+save+"requirements.txt").read()
 
                                 elif f.replace('MyBot', '') == "js" and os.path.isfile(save+"package.json"):
                                     lib = os.popen("cd "+save+" && npm install").read()
@@ -181,8 +181,8 @@ async def compileBot(player):
     settings.db.players.update_one({"_id":player.get("_id")}, {"$set":{"running":True}}, upsert=True)
 
     secs = 0
-    text = "took too much time to compile! Max is "+str(settings.compileOut)+"s"
-    while secs <= 140:
+    text = "took too much time to compile! Max is "+str(240)+"s"
+    while secs <= 240:
         q = settings.db.queues.find_one({"_id":queueId})
         if q.get("status") == "finished":
             if q.get("success"):
@@ -210,15 +210,20 @@ async def compileBot(player):
 
     return text, compileLog
 
-async def battle(p1, p2, width, height, official):
+async def battle(players, width, height, mode):
 
     """
     Function that takes in these parametes:
-    p1 = player one username (string)
-    p2 = player two username (string)
+    players = usernames of the players (array of string)
     width = width of the map for battle (string)
     height = height for the map for battle (string)
-    official = if battle is an official match (bool)
+    mode = type of battle, (int)
+            mode = 0, 1v1 normal battle
+            mode = 1, 1v1 match battle
+            mode = 2, 2v2 normal battle
+            mode = 3, 2v2 match battle
+            mode = 4, 4FFA normal battle
+            mode = 5, 4FFA match battle
     Function creates a queue in the db, the handler
     stars the battle and here it keeps checking until
     is finished ( or return a timout error ).
@@ -226,107 +231,100 @@ async def battle(p1, p2, width, height, official):
     the player individual logs
     """
 
-    p1Name = p1.replace(' ', '')
-    p2Name = p2.replace(' ', '')
+    pp = []
+    for i in players:
+        p = settings.db.players.find_one({"username":i.replace(' ', '')})
+        pp.append(p)
 
-    p1 = settings.db.players.find_one({"username":p1Name})
-    p2 = settings.db.players.find_one({"username":p2Name})
+    modes = [2, 2, 4, 4, 4, 4]
+    types = ["battle", "match", "2v2", "2v2-match", "FFA", "FFA-match"]
 
-    p1Ava, p2Ava = False, False
-    if p1 != None :
-        p1Ava = True
-    if p2 != None :
-        p2Ava = True
-
-    log1 = ""
-    log2 = ""
+    logs = []
     result = ""
     replay = ""
     status = ""
 
-    if p1Ava and p2Ava :
-        battleName = p1.get("username")+"VS"+p2.get("username")
-        if p1.get("running") or p2.get("running"):
-            status = "**Error setting up the battle!** "+p1Name+" already running : *"+str(p1.get("running"))+"*, "+p2Name+" already running : *"+str(p2.get("running"))+"*"
+    if len(pp) == modes[mode] and not None in pp:
+        battleName = ""
+        ready = False
+        count = 0
+        for p in pp:
+            if p.get("running"):
+                status = "**Error setting up the battle!** "+p.get("username")+" **is already running something!**"
+                ready = False
+                break
+            battleName += p.get("username")
+            if len(pp) == 2:
+                battleName += "VS" if count == 0 else ""
+            else:
+                battleName += "-" if p != pp[-1] else ""
+            count += 1
+            ready = True
 
-        else:
+        if ready:
             os.system("rm "+settings.path+"/../env/out/"+battleName+"* > /dev/null 2>&1")
-            if not official:
-                data = {
-                    "type":"battle",
-                    "players":[p1, p2],
-                    "status":"not-running",
-                    "logfile":"",
-                    "success":False,
-                    "map":[width, height]
-                }
-                queueId = settings.db.queues.insert_one(data).inserted_id
-                settings.db.players.update_one({"_id":p1.get("_id")}, {"$set":{"running":True}}, upsert=True)
-                settings.db.players.update_one({"_id":p2.get("_id")}, {"$set":{"running":True}}, upsert=True)
 
-                secs = 0
-                status = "**Battle took too much time! Max is "+str(settings.runOut)+"s**"
-                while secs <= 120: #time same as env/handler.py
-                    q = settings.db.queues.find_one({"_id":queueId})
-                    if q.get("status") == "finished" and os.path.isfile(q.get("logfile")):
+            data = {
+                "type":types[mode],
+                "players":pp,
+                "status":"not-running",
+                "logfile":"",
+                "success":False,
+                "map":[width, height],
+                "name":battleName
+            }
+            queueId = settings.db.queues.insert_one(data).inserted_id
+            for p in pp:
+                settings.db.players.update_one({"_id":p.get("_id")}, {"$set":{"running":True}}, upsert=True)
+
+            secs = 0
+            timeout = settings.g.get("timeout") * settings.g.get("max_turns") + settings.g.get("extra_time")
+            status = "**Battle took too much time! Max is "+str(timeout)+"s**"
+
+            while secs <= timeout: #time same as env/handler.py
+                q = settings.db.queues.find_one({"_id":queueId})
+                if q.get("status") == "finished" and os.path.isfile(q.get("logfile")):
+                    if mode == 0 or mode == 2 or mode == 4:
                         if os.path.isfile(settings.path+"/../env/out/"+battleName+".hlt"):
                             replay = settings.path+"/../env/out/"+battleName+".hlt"
+
                             with open(q.get("logfile"), "r") as l:
                                 result = "```"+l.read()+"```"
-                            for f in os.listdir(p1.get("path")):
-                                if f.endswith(".log"):
-                                    log1 = p1.get("path")+f
-                            for f in os.listdir(p2.get("path")):
-                                if f.endswith(".log"):
-                                    log2 = p2.get("path")+f
-                                status = "**Battle ran successfully, here is the replay and halite output. Sending log files of players in DM...**"
+
+                            for p in pp:
+                                for f in os.listdir(p.get("path")):
+                                    if f.endswith(".log"):
+                                        logs.append(p.get("path")+f)
+
+                            status = "**Battle ran successfully, here is the replay and halite output. Sending log files of players in DM...**"
+
                         else:
                             status = "**Error while running the battle, here is the halite output.**"
-
-                        break
-
-                    else:
-                        await asyncio.sleep(1)
-                        secs += 1
-
-            else:
-                data = {
-                    "type":"match",
-                    "players":[p1, p2],
-                    "status":"not-running",
-                    "logfile":"",
-                    "success":False
-                }
-                queueId = settings.db.queues.insert_one(data).inserted_id
-                settings.db.players.update_one({"_id":p1.get("_id")}, {"$set":{"running":True}}, upsert=True)
-                settings.db.players.update_one({"_id":p2.get("_id")}, {"$set":{"running":True}}, upsert=True)
-
-                secs = 0
-                status = "**Match took too much time! Max is "+str(settings.runOut*settings.runs)+"s**"
-                while secs <= 120*settings.runs:
-                    q = settings.db.queues.find_one({"_id":queueId})
-                    if q.get("status") == "finished":
-                        if os.path.exists(settings.path+"/../env/out/"+battleName+"/battle.log"):
-                            with open(settings.path+"/../env/out/"+battleName+"/battle.log", "r") as l:
+                            with open(q.get("logfile"), "r") as l:
                                 result = "```"+l.read()+"```"
 
-                            if os.path.exists(settings.path+"/../env/out/"+battleName+"/"+str(settings.runs)+".hlt"):
-                                replay = settings.path+"/../env/out/"+battleName+"/match.zip"
-                                status = "**Match ran successfully, here are the results and the replays.**"
-                            else:
-                                status = "**Error while running the match, here is the halite output.**"
+                    elif mode == 1 or mode == 3 or mode == 5:
+                        if os.path.exists(settings.path+"/../env/out/"+battleName+"/"+settings.g.get("runs")+".hlt"):
+                            replay = settings.path+"/../env/out/"+battleName+"/match.zip"
+                            status = "**Match ran successfully, here are the results and the replays.**"
+                        else:
+                            status = "**Error while running the match, here is the halite output.**"
 
-                            break
+                    break
 
-                    else:
-                        await asyncio.sleep(1)
-                        secs += 1
+                else:
+                    await asyncio.sleep(1)
+                    secs += 1
 
             settings.db.queues.delete_one({"_id":queueId})
-            settings.db.players.update_one({"_id":p1.get("_id")}, {"$set":{"running":False}}, upsert=True)
-            settings.db.players.update_one({"_id":p2.get("_id")}, {"$set":{"running":False}}, upsert=True)
+            for p in pp:
+                settings.db.players.update_one({"_id":p.get("_id")}, {"$set":{"running":False}}, upsert=True)
 
     else:
-        status = "**Error setting up the battle! Submissions state :** ***"+p1Name+"="+str(p1Ava)+" "+p2Name+"="+str(p2Ava)+"***"
+        wrong = ""
+        for i in range(len(pp)):
+            if pp[i] == None:
+                wrong += players[i] + " "
+        status = "**Error setting up the battle! "+wrong+"didn't submit!**"
 
-    return status, result, log1, log2, replay
+    return status, result, logs, replay

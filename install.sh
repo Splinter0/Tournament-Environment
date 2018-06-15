@@ -3,9 +3,9 @@ sudo apt-get update
 #install python3, pip3 and mongoDB
 sudo apt-get install python3 python3-pip mongodb-org
 #install discord API
-sudo pip3 install discord
+sudo -H pip3 install discord
 #install mongoDB API
-sudo pip3 install pymongo
+sudo -H pip3 install pymongo
 #install cmake
 sudo apt-get install cmake
 #install rust
@@ -38,3 +38,16 @@ export PATH=$PATH:/usr/local/go/bi
 sudo apt-get install gccgo-go
 #install c# compiler
 sudo apt-get install mono-complete
+
+#setting permissions for arena
+#chmod 777 *
+#chmod 770 db/ LICENSE README.md imgs/ season-3/ install.sh \
+#ht.sh env/Engine/ env/README.md handler/.gitignore handler/arena.sh \
+#handler/bot.log handler/funcs.py handler/main.py handler/handler.py \
+#handler/README.md handler/settings.py
+#chmod 775 env/halite
+
+#setting up iptables for arena
+#iptables -A OUTPUT -s 127.0.0.1/32 -m owner --uid-owner 1002 -j ACCEPT
+#iptables -A INPUT -s 127.0.0.1/32 -j ACCEPT
+#iptables -A OUTPUT -m owner --uid-owner 1002 -j DROP

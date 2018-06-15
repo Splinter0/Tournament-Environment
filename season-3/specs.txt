@@ -1,0 +1,42 @@
+**Halite Tournaments Season III is here!**
+
+This is going to be a very special season since the **format** of
+the tournament has changed!
+
+- This will be a **2v2** tournament, the teams will be
+  **randomly chosen every round**, meaning that once
+  a team wins the two players in that team will
+  pass the round and be part of a different team
+  the next round.
+
+- The format will be **double elimination**, meaning that
+  there will be two players coming from the losers
+  brackets.
+
+- **The finals**, however, will be **4FFA** so prepare
+  yourself to both 2v2 and 4FFA!
+
+The **constants** have also changed, here is a brief explanation
+of them :
+
+- Starting Ship Count : 5
+- More Planets
+- 4000ms timeout per turn
+- Faster ships
+- Ship regeneration
+- Lower weapon damage
+- Bigger explosion radius
+- Bigger docking radius
+- Faster production
+
+Here is the link for the `Constants.hpp` : https://goo.gl/npHWid
+
+Due to the changes with the 2v2 mode, you will have to know the id
+of your team mate. This will be pretty easy for you to implement
+because : **Player #0 is always with Player#2 and
+Player#1 is always with Player#3**, so you will have to write
+something like this : https://goo.gl/FkzzGN
+
+Good luck, and remember that the tournament starts on **June 30th!**
+
+May the best bot win!

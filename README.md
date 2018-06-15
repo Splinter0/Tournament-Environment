@@ -74,8 +74,9 @@ He has access to all project folders.
 
 ## TODO
 
-- Modify the engine for season-III
-- Improve graphics of the messages with Embed
+- Add interaction with HT-Backup
+- Add results for !match
+- Make a setup file...
 
 ## Contribute!
 

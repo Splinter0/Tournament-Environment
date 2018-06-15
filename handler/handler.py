@@ -1,6 +1,7 @@
 import os
 import threading
 import time
+import sys
 import subprocess
 import random
 import zipfile
@@ -11,11 +12,12 @@ from pymongo import MongoClient
 #these will be hardcoded until we have
 #a function to set everything up automatically
 username = urllib.parse.quote_plus('arena')
-password = urllib.parse.quote_plus('')
+password = urllib.parse.quote_plus(')O2BK%bm1v}*A?U5rYndr=mik>9QBLq^Sb|5^vork{KxE4(A')
 mongo = MongoClient('mongodb://%s:%s@localhost:27017/halite-tournaments' % (username, password))
 
 db = mongo["halite-tournaments"]
 s = db.arena.find_one({})
+game = db.game.find_one({})
 
 path = os.path.dirname(os.path.realpath(__file__))
 
@@ -36,24 +38,12 @@ def randmizeMap(m):
     Randomize the maps for battle
     """
 
-    default = ["240", "160"]
-    maps = {
-        "small":[
-            ["216", "144"], #-10% from default
-            ["204", "136"], #-15% from default
-            ["192", "128"]], #-20% from default
-
-        "big":[
-            ["264", "176"], #+10% from default
-            ["276", "192"], #+15% from default
-            ["288", "192"]]  #+20% from default
-        }
     if len(m) == 0 or len(m) == 2:
-        return maps["small"][random.randint(0, 2)]
+        return game.find("maps")["small"][random.randint(0, 2)]
     elif len(m) == 1 or len(m) == 3:
-        return maps["big"][random.randint(0, 2)]
+        return game.find("maps")["big"][random.randint(0, 2)]
     else:
-        return default
+        return game.find("default")
 
 def randomizeSeed():
 
@@ -61,7 +51,7 @@ def randomizeSeed():
     Randomize the seed for battle
     """
 
-    return str(random.randint(2350513674, 2350513694))
+    return str(random.randint(game["seeds"][0], game["seeds"][1]))
 
 def forrest(): #reference alert
 
@@ -102,7 +92,7 @@ class BobTheBuilder(threading.Thread): #reference alert
         if self.comp != "":
             self.log += "*****COMPILER LOG*****\n"
             try:
-                output = subprocess.check_output("cd "+self.path+" && "+self.comp, timeout=60, shell=True).decode()
+                output = subprocess.check_output("cd "+self.path+" && "+self.comp, timeout=120, shell=True).decode()
                 self.log += output+"\n\n"
 
             except subprocess.TimeoutExpired:
@@ -110,9 +100,10 @@ class BobTheBuilder(threading.Thread): #reference alert
 
             except subprocess.CalledProcessError as e:
                 self.log += str(e)
+                self.log += output+"\n\n"
 
         self.fire = "cd "+self.path+" && "+self.fire
-        command = "/."+path+s.get('halite')+" -d \"240 160\" \""+self.fire+"\" \""+self.fire+"\" -i "+path+s.get('out')
+        command = "/."+path+game.get('halite')+" -d \"240 160\" \""+self.fire+"\" \""+self.fire+"\" -i "+path+s.get('out')
         self.log += "*****HALITE LOG*****\n"
         success = False
 
@@ -160,47 +151,59 @@ class Arena(threading.Thread):
         threading.Thread.__init__(self)
         self._stop_event = threading.Event()
         self.q = q
-        self.p1 = self.q.get("players")[0]
-        self.p2 = self.q.get("players")[1]
-        self.name = self.p1.get('username')+"VS"+self.p2.get('username')
-        self.official = False
-        if self.q.get("type") == "match":
-            self.official = True
+        self.players = []
+        for p in self.q.get("players"):
+            self.players.append(p)
+        self.name = self.q.get('name')
+        self.type = self.q.get("type")
+        if self.type == "match":
             self.maps = []
         else:
             self.sizes = q.get("map")
+
+        self.official = ["match", "2v2-match", "FFA-match"]
         self.log = ""
-        self.battles = 5
         self.results = []
-        self.out = path+s.get('out')+self.name
+        self.out = path+s.get('out')
         self.logFile = ""
 
     def start(self):
-        os.system("rm "+self.p1.get("path")+"*.log "+self.p2.get("path")+"*.log > /dev/null 2>&1")
+        for p in self.players:
+            os.system("rm "+p.get("path")+"*.log  > /dev/null 2>&1")
 
         success = False
 
-        if self.official:
+        if self.type in self.official:
             try:
                 os.mkdir(self.out)
             except:
                 pass
             self.logFile = self.out+"/battle.log"
+            self.out += self.name
             zipped = zipfile.ZipFile(self.out+"/match.zip", mode="w")
-            for b in range(self.battles):
+
+            for b in range(game.get('runs')):
                 self.sizes = randmizeMap(self.maps)
                 self.maps.append(self.sizes)
-                self.command = ["/."+path+s.get('halite'), "-d", self.sizes[0]+" "+self.sizes[1],\
-                                "cd "+self.p1.get("path")+" && "+self.p1.get("commands")[1], \
-                                "cd "+self.p2.get("path")+" && "+self.p2.get("commands")[1], \
-                                "-t", "-i", self.out+"/", "-s", randomizeSeed()]
+                self.command =  ["/."+path+game.get('halite'), "-d", self.sizes[0]+" "+self.sizes[1]]
+                for p in self.players:
+                    self.command.append("cd "+p.get("path")+" && "+p.get("commands")[1])
+                self.command += ["-i", self.out+"/", "-s", randomizeSeed()]
+                if self.type == "2v2-match":
+                    self.command.append("--team")
 
                 try:
-                    output = subprocess.check_output(self.command, timeout=120).decode()
-                    if output.splitlines(True)[-3].startswith("Opening"):
-                        replay = output.splitlines(True)[-3].split()[4]
+                    timeout = game.get("timeout") * game.get("max_turns") + game.get("extra_time")
+                    o = subprocess.check_output(self.command, timeout=timeout).decode()
+                    output = o.splitlines(True)
+
+                    if output[-3].startswith("Opening"):
+                        replay = output[-3].split()[4]
                         os.rename(replay, self.out+"/"+str(b+1)+".hlt")
-                        self.results.append([output.splitlines(True)[-2], output.splitlines(True)[-1]])
+                        tmp = []
+                        for i in range(len(self.players)):
+                            tmp.append(output[-(i+1)])
+                        self.results.append(tmp)
                         zipped.write(self.out+"/"+str(b+1)+".hlt", arcname=str(b+1)+".hlt")
                         success = True
                     else :
@@ -215,36 +218,47 @@ class Arena(threading.Thread):
             zipped.close()
 
         else:
-            self.logFile = self.out+".log"
-            self.command = ["/."+path+s.get('halite'), "-d", self.sizes[0]+" "+self.sizes[1],\
-                            "cd "+self.p1.get("path")+" && "+self.p1.get("commands")[1], \
-                            "cd "+self.p2.get("path")+" && "+self.p2.get("commands")[1], \
-                            "-t", "-i", path+s.get('out')]
+            self.logFile = self.out+self.name+".log"
+            self.command =  ["/."+path+game.get('halite'), "-d", self.sizes[0]+" "+self.sizes[1]]
+            for p in self.players:
+                self.command.append("cd "+p.get("path")+" && "+p.get("commands")[1])
+            self.command += ["-i", self.out, "-s", randomizeSeed()]
+            if self.type == "2v2":
+                self.command.append("--team")
 
             try:
-                output = subprocess.check_output(self.command, timeout=120).decode()
+                timeout = game.get("timeout") * game.get("max_turns") + game.get("extra_time")
+                o = subprocess.check_output(self.command, timeout=timeout).decode()
+                output = o.splitlines(True)
+                checker = -(len(self.players)+1) if self.type != "2v2" else -3
 
-                if output.splitlines(True)[-3].startswith("Opening"):
-                    replay = output.splitlines(True)[-3].split()[4]
-                    os.rename(replay, self.out+".hlt")
-                    self.results.append([' '.join(output.splitlines(True)[-2].split()[2:])+"\n", ' '.join(output.splitlines(True)[-1].split()[2:])])
-                    #self.results.append([self.p1.get("username")+" came in rank "+output.splitlines(True)[-2].split()[6], self.p2.get("username")+" came in rank "+output.splitlines(True)[-1].split()[6]])
+                if output[checker].startswith("Opening"):
+                    replay = output[checker].split()[4]
+                    os.rename(replay, self.out+self.name+".hlt")
+                    tmp = []
+                    w = len(self.players) if self.type != "2v2" else 2
+                    for i in range(w):
+                        tmp.append(output[-(i+1)])
+                    self.results.append(tmp)
                     success = True
                 else :
-                    self.log += "ERROR RUNNING BATTLE:\n\n"+output
+                    self.log += "ERROR RUNNING BATTLE:\n\n"+o
 
             except subprocess.TimeoutExpired:
                 self.log += "Timeout Error\n"
 
             except Exception as e:
                 self.log += str(e)+"\n"
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                self.log += "Encountered exception : "+str(e)+"\n\t"+str(exc_type)+" -- "+str(fname)+" -- "+str(exc_tb.tb_lineno)
 
         num = 1
         for r in self.results:
-            if len(r) == 2:
-                self.log += "Round number : "+str(num)+"\n"+r[0]+"\n"+r[1]+"\n\n\n"
-            else:
-                break
+            self.log += "Round number : "+str(num)+"\n\n"
+            for p in r:
+                self.log += p+"\n"
+            self.log += "\n\n"
             num += 1
 
         with open(self.logFile, "w") as l:
@@ -293,32 +307,26 @@ class Handler(threading.Thread):
                     continue
 
             if self.space > 0:
-                for q in db.queues.find({"type":"match"}):
-                    if self.space == 0:
-                        break
-                    if q.get('status') == "not-running":
-                        thread = Arena(q)
-                        thread.setName(q.get('players')[0].get('username')+"VS"+q.get('players')[1].get('username'))
-                        self.queue.append(thread)
-                        self.space -= 1
-                        db.queues.update_one({"_id":q.get('_id')}, {"$set":{"status":"running"}}, upsert=True)
-                        thread.start()
-                    else:
-                        continue
+                queues = [db.queues.find({"type":"match"}),
+                        db.queues.find({"type":"2v2-match"}),
+                        db.queues.find({"type":"FFA-match"}),
+                        db.queues.find({"type":"battle"}),
+                        db.queues.find({"type":"2v2"}),
+                        db.queues.find({"type":"FFA"})]
 
-            if self.space > 0:
-                for q in db.queues.find({"type":"battle"}):
-                    if self.space == 0:
-                        break
-                    if q.get('status') == "not-running":
-                        thread = Arena(q)
-                        thread.setName(q.get('players')[0].get('username')+"VS"+q.get('players')[1].get('username'))
-                        self.queue.append(thread)
-                        self.space -= 1
-                        db.queues.update_one({"_id":q.get('_id')}, {"$set":{"status":"running"}}, upsert=True)
-                        thread.start()
-                    else:
-                        continue
+                for b in queues:
+                    for q in b:
+                        if self.space == 0:
+                            break
+                        if q.get('status') == "not-running":
+                            thread = Arena(q)
+                            thread.setName(q.get('name'))
+                            self.queue.append(thread)
+                            self.space -= 1
+                            db.queues.update_one({"_id":q.get('_id')}, {"$set":{"status":"running"}}, upsert=True)
+                            thread.start()
+                        else:
+                            continue
 
             while len(self.queue) > 0:
                 for thread in self.queue :
