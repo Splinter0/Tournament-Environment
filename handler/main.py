@@ -1,7 +1,6 @@
 import discord
 import asyncio
 import os
-import pexpect
 import json
 import funcs
 import settings
