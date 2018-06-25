@@ -39,11 +39,11 @@ def randmizeMap(m):
     """
 
     if len(m) == 0 or len(m) == 2:
-        return game.find("maps")["small"][random.randint(0, 2)]
+        return game.get("maps")["small"][random.randint(0, 2)]
     elif len(m) == 1 or len(m) == 3:
-        return game.find("maps")["big"][random.randint(0, 2)]
+        return game.get("maps")["big"][random.randint(0, 2)]
     else:
-        return game.find("default")
+        return game.get("default")
 
 def randomizeSeed():
 
@@ -88,6 +88,7 @@ class BobTheBuilder(threading.Thread): #reference alert
 
         self.comp = self.player.get('commands')[0]
         self.fire = self.player.get('commands')[1]
+        output = ""
 
         if self.comp != "":
             self.log += "*****COMPILER LOG*****\n"
@@ -121,7 +122,8 @@ class BobTheBuilder(threading.Thread): #reference alert
         except subprocess.TimeoutExpired:
             self.log += "Timeout Error!\n"
 
-        except subprocess.CalledProcessError as e:
+        except Exception as e:
+            self.log += str("Command '{}' returned with error (code {}): {}".format(e.cmd, e.returncode, e.output))
             self.log += str(e)
 
         with open(path+s.get('out')+self.name+".txt", "w") as l :
@@ -156,9 +158,8 @@ class Arena(threading.Thread):
             self.players.append(p)
         self.name = self.q.get('name')
         self.type = self.q.get("type")
-        if self.type == "match":
-            self.maps = []
-        else:
+        self.maps = []
+        if self.type != "match":
             self.sizes = q.get("map")
 
         self.official = ["match", "2v2-match", "FFA-match"]
@@ -174,17 +175,20 @@ class Arena(threading.Thread):
         success = False
 
         if self.type in self.official:
+            self.out += self.name
             try:
                 os.mkdir(self.out)
             except:
                 pass
             self.logFile = self.out+"/battle.log"
-            self.out += self.name
             zipped = zipfile.ZipFile(self.out+"/match.zip", mode="w")
 
-            for b in range(game.get('runs')):
-                self.sizes = randmizeMap(self.maps)
-                self.maps.append(self.sizes)
+            for b in range(int(game.get('runs'))):
+                if self.type == "2v2-match" or "FFA-match":
+                    self.sizes = game.get("big-map")
+                else:
+                    self.sizes = randmizeMap(self.maps)
+                    self.maps.append(self.sizes)
                 self.command =  ["/."+path+game.get('halite'), "-d", self.sizes[0]+" "+self.sizes[1]]
                 for p in self.players:
                     self.command.append("cd "+p.get("path")+" && "+p.get("commands")[1])
@@ -214,6 +218,9 @@ class Arena(threading.Thread):
 
                 except Exception as e:
                     self.log += str(e)+"\n"
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+                    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                    self.log += "Encountered exception : "+str(e)+"\n\t"+str(exc_type)+" -- "+str(fname)+" -- "+str(exc_tb.tb_lineno)
 
             zipped.close()
 
@@ -354,3 +361,9 @@ if __name__ == '__main__':
 
     except KeyboardInterrupt:
         pass
+
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        l = "Encountered exception : "+str(e)+"\n\t"+str(exc_type)+" -- "+str(fname)+" -- "+str(exc_tb.tb_lineno)
+        log(str(l))

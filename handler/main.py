@@ -120,15 +120,15 @@ async def on_message(message):
                 else:
                     try:
                         await client.send_message(message.channel, "`Submitting, compiling and testing your bot...` "+message.author.mention)
-                        response, compileLog = await funcs.uploadBot(message.attachments[0].get('url'), str(message.author), message.attachments[0].get('filename'))
+                        response, compileLog, sub = await funcs.uploadBot(message.attachments[0].get('url'), str(message.author), message.attachments[0].get('filename'))
+                        await client.send_message(message.channel, "`"+response+"` "+message.author.mention)
                         if not message.channel.is_private:
                             await client.delete_message(message)
-                        else:
-                            #TODO add full implementation
-                            global haliteBackup
-                            #await client.send_message(haliteBackup, ">store ")
-                        await client.send_message(message.channel, "`"+response+"` "+message.author.mention)
                         if compileLog != "": #if compiled and run successfully
+                            if message.channel.is_private:
+                                global haliteBackup
+                                await client.send_file(haliteBackup, sub, content=">store "+message.author.id)
+
                             await client.send_message(message.author, "**Here your compile and run log for yout bot submission!**")
                             await client.send_file(message.author, compileLog)
 
@@ -298,9 +298,12 @@ async def on_message(message):
                         #check if logs are present and send them
                         for l in range(len(logs)):
                             try:
-                                await client.send_message(message.mentions[l], "**Here is the logfile of your bot : (timstamp battle : "+funcs.getTime()+")**")
-                                await client.send_file(message.mentions[l], logs[l])
-                                os.remove(logs[l])
+                                if logs[l] != "":
+                                    await client.send_message(message.mentions[l], "**Here is the logfile of your bot : (timstamp battle : "+funcs.getTime()+")**")
+                                    await client.send_file(message.mentions[l], logs[l])
+                                    os.remove(logs[l])
+                                else:
+                                    await client.send_message(message.mentions[l], "**No log file present : (timstamp battle : "+funcs.getTime()+")**")
 
                             except:
                                 pass

@@ -142,13 +142,13 @@ async def uploadBot(link, username, fileName):
                     text = 'File bot : ' + fileName + ' does not contain a **MyBot** file of any type!'
 
                 log(text)
-                return text, compileLog
+                return text, compileLog, save + fileName
 
             return "File wasn't a .zip file, check the rules!", ""
 
         except Exception as e:
             s = log(str(e))
-            return s, ""
+            return s, "", ""
 
     else:
         return "Cannot compile "+fileName+", user is already running a battle/match or compiling other code!", ""
@@ -292,9 +292,16 @@ async def battle(players, width, height, mode):
                                 result = "```"+l.read()+"```"
 
                             for p in pp:
+                                found = False
                                 for f in os.listdir(p.get("path")):
                                     if f.endswith(".log"):
                                         logs.append(p.get("path")+f)
+                                        found = True
+                                        break
+
+                                if not found:
+                                    logs.append("")
+
 
                             status = "**Battle ran successfully, here is the replay and halite output. Sending log files of players in DM...**"
 
@@ -304,7 +311,9 @@ async def battle(players, width, height, mode):
                                 result = "```"+l.read()+"```"
 
                     elif mode == 1 or mode == 3 or mode == 5:
-                        if os.path.exists(settings.path+"/../env/out/"+battleName+"/"+settings.g.get("runs")+".hlt"):
+                        with open(q.get("logfile"), "r") as l:
+                            result = "```"+l.read()+"```"
+                        if os.path.exists(settings.path+"/../env/out/"+battleName+"/"+str(int(settings.g.get("runs")))+".hlt"):
                             replay = settings.path+"/../env/out/"+battleName+"/match.zip"
                             status = "**Match ran successfully, here are the results and the replays.**"
                         else:

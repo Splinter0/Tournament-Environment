@@ -74,7 +74,6 @@ He has access to all project folders.
 
 ## TODO
 
-- Add interaction with HT-Backup
 - Add results for !match
 - Make a setup file...
 
