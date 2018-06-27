@@ -200,18 +200,20 @@ class Arena(threading.Thread):
                     timeout = game.get("timeout") * game.get("max_turns") + game.get("extra_time")
                     o = subprocess.check_output(self.command, timeout=timeout).decode()
                     output = o.splitlines(True)
+                    checker = -(len(self.players)+1) if self.type != "2v2-match" else -3
 
-                    if output[-3].startswith("Opening"):
-                        replay = output[-3].split()[4]
+                    if output[checker].startswith("Opening"):
+                        replay = output[checker].split()[4]
                         os.rename(replay, self.out+"/"+str(b+1)+".hlt")
                         tmp = []
-                        for i in range(len(self.players)):
+                        w = len(self.players) if self.type != "2v2-match" else 2
+                        for i in range(w):
                             tmp.append(output[-(i+1)])
                         self.results.append(tmp)
                         zipped.write(self.out+"/"+str(b+1)+".hlt", arcname=str(b+1)+".hlt")
                         success = True
                     else :
-                        self.log += "ERROR RUNNING BATTLE:\n\n"+output
+                        self.log += "ERROR RUNNING BATTLE:\n\n"+o
 
                 except subprocess.TimeoutExpired:
                     self.log += "Timeout Error\n"
@@ -342,6 +344,8 @@ class Handler(threading.Thread):
 
             time.sleep(1)
 
+        print("Handler going down...")
+        self.stop()
 
     def stop(self):
         self._stop_event.set()

@@ -2,6 +2,7 @@ import os
 import datetime
 import zipfile
 import settings
+import subprocess
 import time
 import random
 import asyncio
@@ -48,6 +49,17 @@ def str_to_bool(s):
         return True
     if s == 'False':
         return False
+
+def checkPulse():
+    return settings.db.arena.find_one({}).get('running')
+
+def manageHandler(start=True):
+    if start:
+        handler = subprocess.Popen("python3 "+settings.path+"/handler.py", shell=True)
+        settings.db.arena.update_one({}, {"$set":{"running":True}}, upsert=True)
+    else:
+        settings.db.arena.update_one({}, {"$set":{"running":False}}, upsert=True)
+
 
 async def uploadBot(link, username, fileName):
 

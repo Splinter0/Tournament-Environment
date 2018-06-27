@@ -75,7 +75,6 @@ He has access to all project folders.
 ## TODO
 
 - Add results for !match
-- Make a setup file...
 
 ## Contribute!
 

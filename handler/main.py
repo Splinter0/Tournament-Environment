@@ -12,7 +12,7 @@ client = discord.Client()
 commands = {"!help":"Show this message",
             "!submit":"Select your file and write this as a comment to submit your bot, you this in the **season-"+settings.season+"** to submit for the tournament",
             "!brackets":"Check current brackets",
-            "!matches":"Print upcoming matches, tag a user after to check his upcoming matches",
+            "!matches":"Print upcoming matches",
             "!submissions":"Check if submissions are opened/closed and when they close/open",
             "!languages":"Check supported languages for submissions, add a language name to know how it's compiled/run \n\t*!language python*",
             "!battle":"Run a match between two players, \n\t*!battle [players tags] [height map] [width map] [2v2]* \n\tdo this in the **#battles channel**",
@@ -191,42 +191,27 @@ async def on_message(message):
             if settings.onTour: #if we are running in a tournament
                 m = str(message.content).split()
                 matches = settings.matches
-                if matches is None or len(matches) < 1 or matches == "empty":
-                    text = "**No matches scheduled at the moment!**"
+                if matches is None or len(matches) < 2 :
+                    await client.send_message(message.channel, "**No scheduled matches!**")
 
                 elif len(m) == 1: #check all matches
-                    text = "**Here are the upcoming matches!** "+settings.emojis["logo"]+"\n\n"
+                    embed = discord.Embed(title="Matches", description="Here are the upcoming matches! "+settings.emojis["explosion"], color=0xffae00)
+                    embed.set_thumbnail(url="https://raw.githubusercontent.com/Splinter0/Tournament-Environment/master/imgs/logo.png")
+                    embed.set_footer(text=funcs.getTime()+" (UTC) - HTBot")
                     for k,v in sorted(matches.items()):
-                        text += "**" + k + "** : \n"
-                        for p in v:
-                            text += "\t" + p + "\n"
+                        if k == "placeholder":
+                            continue
+                        text = "**" + k + "** : \n"
+                        value = ""
+                        for r in v:
+                            value += "\t" + r + "\n"
 
-                else: #check specific matches for player
-                    t = ""
-                    player = ""
-                    try :
-                        player = str(message.mentions[0])
+                        embed.add_field(name=text, value=value, inline=False)
 
-                    except IndexError:
-                        text = "**Wrong formatting! Check `!help` for more info**"
-
-                    if player != "":
-                        for k,v in sorted(matches.items()):
-                            for p in v:
-                                if player in p:
-                                    t += "**" + k + "** : \n"
-                                    t += "\t" + p + "\n"
-
-                    if t != "":
-                        text = "**Here are all the matches of : "+m[1]+"** "+settings.emojis["logo"]+"\n"+t
-
-                    elif player != "" and t == "" :
-                        text = "**No matches scheduled for : "+m[1]+" !**"
+                    await client.send_message(message.channel, embed=embed)
 
             else :
-                text = "**No scheduled matches!**"
-
-            await client.send_message(message.channel, text)
+                await client.send_message(message.channel, "**No scheduled matches!**")
 
         elif message.content.startswith("!battle"):
 
@@ -332,11 +317,11 @@ async def on_message(message):
 
             for m in members:
                 if player in m.roles:
-                    p = settings.db.players.find_one({"username":str(m)})
+                    p = settings.db.players.find_one({"username":str(m).replace(' ', '')})
                     if p is None:
-                        players[str(m)] = False
+                        players[str(m).replace(' ', '')] = False
                     else:
-                        players[str(m)] = True
+                        players[str(m).replace(' ', '')] = True
 
             if len(players) > 0:
                 text = "**Here are all the players in this season :** "+settings.emojis["aspiring"]+"\n"
@@ -721,26 +706,93 @@ async def on_message(message):
                 try:
                     r = message.content.split()[1]
                     if r == "clear":
-                        settings.db.settings.update({}, {"$unset":{"matches":"empty"}})
+                        settings.db.settings.update({}, {"$unset":{"matches":{}}})
+                        settings.db.settings.update({}, {"$set":{"matches":{"placeholder":["placeholder"]}}})
                         await client.send_message(message.channel, "**Cleared schedule successfully**")
 
                     else:
-                        p1 = str(message.mentions[0])
-                        p2 = str(message.mentions[1])
-                        settings.matches = {}
+                        pp = []
+                        for p in message.raw_mentions:
+                            pp.append(str(server.get_member(p)))
 
-                        try :
-                            settings.matches[r].append(p1+" VS "+p2)
-                            settings.db.settings.update_one({}, {"$set":{"matches":settings.matches}}, upsert=True)
+                        mode = "1v1"
+                        if message.content.split()[-1] == "2v2":
+                            if len(pp) == 1:
+                                for i in range(3):
+                                    pp.append(pp[0])
+                            elif len(pp) == 2:
+                                for i in range(2):
+                                    pp.append(pp[i])
+                            elif len(pp) == 3:
+                                pp.append(pp[-1])
+                            elif len(pp) > 4:
+                                raise IndexError
+                            mode = "2v2"
+                        else:
+                            if len(pp) == 1:
+                                pp.append(pp[0])
+                            elif len(pp) == 3:
+                                pp.append(pp[-1])
+                                mode = "4FFA"
+                            elif len(pp) == 4:
+                                mode = "4FFA"
 
-                        except KeyError:
-                            settings.matches[r] = [p1+" VS "+p2]
-                            settings.db.settings.update_one({}, {"$set":{"matches":settings.matches}}, upsert=True)
+                        name = "**" + mode + "**: "
+                        if mode == "2v2":
+                            name += pp[0] + "**-**" + pp[2] + "**VS**" + pp[1] + "**-**" + pp[3]
+                        elif mode == "4FFA":
+                            name += pp[0] + "**VS**" + pp[1] + "**VS**" + pp[2] + "**VS**" + pp[3]
+                        elif mode == "1v1":
+                            name += pp[0] + "**VS**" + pp[1]
+
+                        try:
+                            settings.matches[r].append(name)
+
+                        except:
+                            settings.matches.update({r:[name]})
+
+                        settings.db.settings.update_one({}, {"$set":{"matches":settings.matches}}, upsert=True)
+                        await client.send_message(message.channel, "**Scheduled match successfully**")
 
                     importlib.reload(settings)
-                    await client.send_message(message.channel, "**Scheduled match successfully**")
 
-                except:
+                except Exception as e:
+                    print(str(e))
+                    await client.send_message(message.channel, "**Invalid command**")
+
+            elif message.content.startswith("!handler"):
+                try:
+                    command = message.content.split()[1]
+
+                    if command == "start":
+                        if funcs.checkPulse():
+                            await client.send_message(message.channel, "**Handler already running**")
+                        else:
+                            funcs.manageHandler()
+                            await client.send_message(message.channel, "**Handler starting up...**")
+
+                    elif command == "stop":
+                        if not funcs.checkPulse():
+                            await client.send_message(message.channel, "**Handler is not running!**")
+                        else:
+                            funcs.manageHandler(start=False)
+                            await client.send_message(message.channel, "**Handler going down...**")
+
+                    elif command == "restart":
+                        await client.send_message(message.channel, "**Restarting handler...**")
+                        if not funcs.checkPulse():
+                            funcs.manageHandler()
+                            await client.send_message(message.channel, "**Handler starting up...**")
+                        else:
+                            funcs.manageHandler(start=False)
+                            await client.send_message(message.channel, "**Handler going down...**")
+                            funcs.manageHandler()
+                            await client.send_message(message.channel, "**Handler starting up...**")
+
+                    else:
+                        await client.send_message(message.channel, "**Invalid command**")
+
+                except IndexError or KeyError:
                     await client.send_message(message.channel, "**Invalid command**")
 
     except Exception as e:
@@ -761,6 +813,7 @@ if __name__ == '__main__':
     try :
         #Custom settings if you want to run handler on different user
         handler = subprocess.Popen("python3 "+settings.path+"/handler.py", shell=True)
+        handlerRunning = True
         client.run(settings.token)
 
     except KeyboardInterrupt:
@@ -775,3 +828,6 @@ if __name__ == '__main__':
             print("\nToken insered is not valid!")
         handler.terminate()
         os._exit(1)
+
+    except Exception as e:
+        funcs.log(str(e))

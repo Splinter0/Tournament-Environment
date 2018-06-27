@@ -21,7 +21,7 @@ s = db.settings.find_one({})
 
 serverName = s.get('server') #Name of server : str
 brackets = s.get('brackets') #File that contains the image of brackets : str
-matches = s.get('matches') #Scheduled matches : dict with str keys and values of lists of str
+matches = s.get('matches') #Scheduled matches : dict with str keys and values str
 logFile = s.get('log') #File used for the logging : str
 season = s.get('season') #Number of season : str
 token = s.get('token') #Token for the discord bot : str
