@@ -210,7 +210,7 @@ async def compileBot(player):
 
     return text, compileLog
 
-async def battle(players, width, height, mode):
+async def battle(players, width, height, mode, seed=None):
 
     """
     Function that takes in these parametes:
@@ -271,7 +271,8 @@ async def battle(players, width, height, mode):
                 "logfile":"",
                 "success":False,
                 "map":[width, height],
-                "name":battleName
+                "name":battleName,
+                "seed": seed if seed != None else ""
             }
             queueId = settings.db.queues.insert_one(data).inserted_id
             for p in pp:

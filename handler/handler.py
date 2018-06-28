@@ -161,6 +161,7 @@ class Arena(threading.Thread):
         self.maps = []
         if self.type != "match":
             self.sizes = q.get("map")
+        self.seed = randomizeSeed() if self.q.get('seed') == "" else self.q.get('seed')
 
         self.official = ["match", "2v2-match", "FFA-match"]
         self.log = ""
@@ -229,7 +230,7 @@ class Arena(threading.Thread):
             self.command =  ["/."+path+game.get('halite'), "-d", self.sizes[0]+" "+self.sizes[1]]
             for p in self.players:
                 self.command.append("cd "+p.get("path")+" && "+p.get("commands")[1])
-            self.command += ["-i", self.out, "-s", randomizeSeed()]
+            self.command += ["-i", self.out, "-s", self.seed]
             if self.type == "2v2":
                 self.command.append("--team")
 

@@ -237,9 +237,10 @@ async def on_message(message):
             try out the game environment and debug their bots
             properly.
             Example of a command :
-                !battle @Splinter @FrankWhoee 292 180
+                !battle @Splinter @FrankWhoee -d 292 180 -s 123456789
             This command starts a game between FrankWhoee and Splinter
-            with a map size of 292x180.
+            with a map size of 292x180 amd the seed 123456789.
+                -d and -s are optional
             """
 
             #if we are in a tournament and in the right channel
@@ -249,9 +250,12 @@ async def on_message(message):
                     pp = []
                     for p in message.raw_mentions:
                         pp.append(str(server.get_member(p)))
+                    
+                    tokens = message.content.split()
+                    seed = tokens[tokens.index('-s') + 1] if '-s' in tokens else None
 
                     mode = 0
-                    if message.content.split()[-1] == "2v2":
+                    if '2v2' in tokens:
                         if len(pp) == 1:
                             for i in range(3):
                                 pp.append(pp[0])
@@ -274,20 +278,15 @@ async def on_message(message):
 
                     try :
                         #get the map sizes
-                        if mode != 2:
-                            width = str(int(message.content.split()[-2]))
-                            height = str(int(message.content.split()[-1]))
-                        else:
-                            width = str(int(message.content.split()[-3]))
-                            height = str(int(message.content.split()[-2]))
-
+                        width = str(int(tokens[tokens.index('-d') + 1]))
+                        height = str(int(tokens[tokens.index('-d') + 2]))
                     except : #if there is a problem set default size
                         await client.send_message(message.channel, "*Using default size map : 240x160*")
                         width = "240"
                         height = "160"
 
                     await client.send_message(message.channel, "*Running battle...* "+settings.emojis["logo"])
-                    status, result, logs, replay = await funcs.battle(pp, width, height, mode)
+                    status, result, logs, replay = await funcs.battle(pp, width, height, mode, seed)
 
                     await client.send_message(message.channel, status)
                     if result != "": #if we have an output
