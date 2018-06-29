@@ -2,7 +2,9 @@
 	"server": "HaliteTournaments",
 	"submit": true,
 	"onTour": true,
-	"matches": {},
+	"matches": {
+		"placeholder":["placeholder"]
+	},
 	"season": "3",
 	"specs": "season-3/specs.txt",
 	"log": "bot.log",
