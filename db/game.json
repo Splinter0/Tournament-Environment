@@ -4,7 +4,7 @@
   "max_turns":350,
   "extra_time":10,
   "seeds":[2350513674, 2350513694],
-  "big-map":["331", "230"],
+  "big-map":["360", "240"],
   "maps":{
     "small":[
       ["216", "144"],
@@ -19,15 +19,4 @@
   },
   "default":["240", "160"],
   "halite":"/../env/halite"
-}
-{
-  "username" : "halite#7598",
-	"path" : "/home/ht-team/Tournament-Environment/bots/testESKERE#1378",
-	"lang" : "java",
-	"commands" : [
-		"javac MyBot.java",
-		"java MyBot"
-	],
-	"flagged" : false,
-	"running" : false
 }

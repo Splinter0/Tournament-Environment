@@ -324,7 +324,7 @@ async def battle(players, width, height, mode):
 
                     elif mode == 1 or mode == 3 or mode == 5:
                         with open(q.get("logfile"), "r") as l:
-                            result = "```"+l.read()+"```"
+                            result = l.read()
                         if os.path.exists(settings.path+"/../env/out/"+battleName+"/"+str(int(settings.g.get("runs")))+".hlt"):
                             replay = settings.path+"/../env/out/"+battleName+"/match.zip"
                             status = "**Match ran successfully, here are the results and the replays.**"

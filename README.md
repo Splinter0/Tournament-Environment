@@ -75,6 +75,8 @@ He has access to all project folders.
 ## TODO
 
 - Add results for !match
+- Create a bot seeder
+- Connect schedule and match
 
 ## Contribute!
 

@@ -7,6 +7,7 @@ The `halite-tournaments` database has the following structure :
   - `settings` (collection with environment settings)
   - `queues` (where actions get queued for handler)
   - `arena` (arena environment settings)
+  - `game` (game settings like map sizes)
 
 ###### Users
 
@@ -16,5 +17,6 @@ The `halite-tournaments` database has the following structure :
 - `players` (only find and update)
 - `queues` (find, update and insert)
 - `arena` (only find and update)
+- `game` (only find and update)
 
 Check the **templates** in json in this folder for more info

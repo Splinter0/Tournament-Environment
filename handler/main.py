@@ -6,6 +6,8 @@ import funcs
 import settings
 import subprocess
 import importlib
+import random
+import zstd
 
 client = discord.Client()
 
@@ -495,8 +497,11 @@ async def on_message(message):
                     try:
                         #get the players from mentions
                         pp = []
+                        mentions = "" #used for bets
                         for p in message.raw_mentions:
-                            pp.append(str(server.get_member(p)))
+                            m = server.get_member(p)
+                            mentions += m.mention + " "
+                            pp.append(str(m))
 
                         mode = 1
                         if message.content.split()[-1] == "2v2":
@@ -521,13 +526,26 @@ async def on_message(message):
                                 mode = 5
 
                         await client.send_message(message.channel, "*Running match...* "+settings.emojis["logo"])
-                        #if haliteVegas != None:
-                        #    await client.send_message(haliteVegas, "!create "+message.mentions[0].mention+" "+message.mentions[1].mention)
-                        status, result, _, replay = await funcs.battle(pp, "", "", mode)
+                        if haliteVegas != None:
+                            text = "!create"
+                            if mode == 3:
+                                text += "-2v2"
+                            elif mode == 5:
+                                text += "-ffa"
 
+                            text += " "+mentions
+                            await client.send_message(haliteVegas, text)
+
+                        status, result, _, replay = await funcs.battle(pp, "", "", mode)
                         await client.send_message(message.channel, status)
                         if result != "": #if we have an output
-                            await client.send_message(message.channel, result)
+                            if mode == 5:
+                                new = result.split("Round")
+                                for line in new:
+                                    await client.send_message(message.channel, "```"+line+"```")
+                            else:
+                                await client.send_message(message.channel, "```"+result+"```")
+
                             if replay != "":
                                 await client.send_file(message.channel, replay)
 
